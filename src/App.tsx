@@ -37,6 +37,7 @@ import { DataCleaningModal } from './components/Cleaner/DataCleaningModal';
 import { DashboardFilterBar } from './components/Common/DashboardFilterBar';
 import { IndicatorCatalogModal } from './components/Common/IndicatorCatalogModal';
 import { DataQualityView } from './components/Quality/DataQualityView';
+import { DistrictPerformanceView } from './components/District/DistrictPerformanceView';
 import {
   RicePaddyIcon,
   CassavaTuberIcon,
@@ -81,6 +82,7 @@ export default function App() {
     | 'dashboard'
     | 'data_quality'
     | 'map'
+    | 'district_profile'
     | 'value_chains'
     | 'yield_outlook'
     | 'yield_studies'
@@ -475,6 +477,18 @@ export default function App() {
               <span>District GIS Map</span>
             </button>
             <button
+              id="tab-district-profile"
+              onClick={() => setActiveTab('district_profile')}
+              className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                activeTab === 'district_profile'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>District Profile</span>
+            </button>
+            <button
               id="tab-value-chains"
               onClick={() => setActiveTab('value_chains')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -718,6 +732,14 @@ export default function App() {
               />
             </div>
           </div>
+        )}
+
+        {activeTab === 'district_profile' && (
+          <DistrictPerformanceView
+            selectedDistrict={selectedDistrict}
+            selectedValueChain={selectedValueChain}
+            onSelectDistrict={setSelectedDistrict}
+          />
         )}
 
         {activeTab === 'value_chains' && <ValueChainsView />}
