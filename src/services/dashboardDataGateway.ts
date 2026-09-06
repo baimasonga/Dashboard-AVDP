@@ -41,9 +41,12 @@ const isDataset = (value: unknown): value is Dataset => {
 
 const normalizeBaseUrl = (value: string) => value.replace(/\/+$/, '');
 
+const runtimeEnv =
+  (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env || {};
+
 class DashboardDataGateway {
   public getConfiguredMode(): DashboardDataMode {
-    return import.meta.env.VITE_DASHBOARD_DATA_MODE === 'live' ? 'live' : 'demonstration';
+    return runtimeEnv.VITE_DASHBOARD_DATA_MODE === 'live' ? 'live' : 'demonstration';
   }
 
   public async load(): Promise<DashboardDataSnapshot> {
@@ -59,7 +62,7 @@ class DashboardDataGateway {
       };
     }
 
-    const configuredBaseUrl = String(import.meta.env.VITE_DASHBOARD_DATA_API_URL || '').trim();
+    const configuredBaseUrl = String(runtimeEnv.VITE_DASHBOARD_DATA_API_URL || '').trim();
     if (!configuredBaseUrl) {
       throw new Error(
         'Live dashboard mode requires VITE_DASHBOARD_DATA_API_URL. Demonstration data was not substituted.'
