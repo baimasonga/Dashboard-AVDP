@@ -279,7 +279,10 @@ export default function App() {
                   SIERRA LEONE AVDP
                 </h1>
                 <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-700/60">
-                  MAFS &amp; AfDB
+                  MAFS
+                </span>
+                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-700/70">
+                  DEMONSTRATION DATA
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 font-medium">
@@ -454,6 +457,18 @@ export default function App() {
               <span>Future Yield Outlook</span>
             </button>
             <button
+              id="tab-yield-studies"
+              onClick={() => setActiveTab('yield_studies')}
+              className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                activeTab === 'yield_studies'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              }`}
+            >
+              <Microscope className="w-3.5 h-3.5" />
+              <span>Yield Studies</span>
+            </button>
+            <button
               id="tab-ffs"
               onClick={() => setActiveTab('ffs')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -565,6 +580,18 @@ export default function App() {
         </div>
       </header>
 
+      {/* Dashboard-wide data provenance notice */}
+      <section className="border-b border-amber-800/60 bg-amber-950/35 px-4 py-2" aria-label="Data status">
+        <div className="max-w-7xl mx-auto flex flex-col gap-1 text-[11px] text-amber-100 sm:flex-row sm:items-center sm:justify-between">
+          <span className="font-semibold">
+            Prototype mode: all figures are fictitious and provided for dashboard testing only.
+          </span>
+          <span className="text-amber-300">
+            Source: AVDP demonstration datasets • Status: Illustrative • Not for official reporting
+          </span>
+        </div>
+      </section>
+
       {/* Offline Mode Banner when offline */}
       {!isOnline && (
         <div className="bg-amber-950/80 border-b border-amber-800/80 px-4 py-2 text-xs text-amber-200 flex items-center justify-between max-w-7xl mx-auto w-full">
@@ -643,6 +670,8 @@ export default function App() {
             />
           </div>
         )}
+
+        {activeTab === 'yield_studies' && <YieldStudiesView />}
 
         {activeTab === 'ffs' && <FarmerFieldSchoolsView />}
 
