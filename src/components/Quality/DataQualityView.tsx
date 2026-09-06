@@ -11,6 +11,7 @@ import { Dataset } from '../../types';
 import {
   DataCleaningService,
   ValidationReport,
+  ColumnValidationSummary,
 } from '../../services/dataCleaningService';
 
 interface DataQualityViewProps {
@@ -248,7 +249,7 @@ const DatasetQualityCard: React.FC<{
       ? 'border-amber-800 bg-amber-950/60 text-amber-300'
       : 'border-rose-800 bg-rose-950/60 text-rose-300';
 
-  const problemColumns = Object.values(report.columnSummaries)
+  const problemColumns = (Object.values(report.columnSummaries) as ColumnValidationSummary[])
     .filter(
       (column) =>
         column.missingCount > 0 ||
