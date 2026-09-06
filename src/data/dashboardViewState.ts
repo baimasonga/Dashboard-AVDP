@@ -48,10 +48,11 @@ const defaults: DashboardViewState = {
   reportingPeriod: 'Latest available',
 };
 
-export const readDashboardViewState = (districts: string[]): DashboardViewState => {
-  if (typeof window === 'undefined') return defaults;
-
-  const params = new URLSearchParams(window.location.search);
+export const parseDashboardViewSearch = (
+  search: string,
+  districts: string[]
+): DashboardViewState => {
+  const params = new URLSearchParams(search);
   const tab = params.get('view');
   const district = params.get('district');
   const valueChain = params.get('valueChain');
@@ -71,10 +72,16 @@ export const readDashboardViewState = (districts: string[]): DashboardViewState 
   };
 };
 
-export const buildDashboardViewUrl = (state: DashboardViewState): string => {
-  if (typeof window === 'undefined') return '';
+export const readDashboardViewState = (districts: string[]): DashboardViewState =>
+  typeof window === 'undefined'
+    ? defaults
+    : parseDashboardViewSearch(window.location.search, districts);
 
-  const url = new URL(window.location.href);
+export const buildDashboardViewHref = (
+  currentHref: string,
+  state: DashboardViewState
+): string => {
+  const url = new URL(currentHref);
   const params = url.searchParams;
 
   const setUnlessDefault = (key: string, value: string, defaultValue: string) => {
@@ -91,6 +98,9 @@ export const buildDashboardViewUrl = (state: DashboardViewState): string => {
   url.search = params.toString();
   return url.toString();
 };
+
+export const buildDashboardViewUrl = (state: DashboardViewState): string =>
+  typeof window === 'undefined' ? '' : buildDashboardViewHref(window.location.href, state);
 
 export const replaceDashboardViewUrl = (state: DashboardViewState) => {
   const url = buildDashboardViewUrl(state);
