@@ -37,6 +37,7 @@ import { DataCleaningModal } from './components/Cleaner/DataCleaningModal';
 import { DashboardFilterBar } from './components/Common/DashboardFilterBar';
 import { IndicatorCatalogModal } from './components/Common/IndicatorCatalogModal';
 import { DataQualityView } from './components/Quality/DataQualityView';
+import { DataRefreshView } from './components/Quality/DataRefreshView';
 import { DistrictPerformanceView } from './components/District/DistrictPerformanceView';
 import {
   RicePaddyIcon,
@@ -81,6 +82,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<
     | 'dashboard'
     | 'data_quality'
+    | 'data_refresh'
     | 'map'
     | 'district_profile'
     | 'value_chains'
@@ -465,6 +467,18 @@ export default function App() {
               <span>Data Quality</span>
             </button>
             <button
+              id="tab-data-refresh"
+              onClick={() => setActiveTab('data_refresh')}
+              className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                activeTab === 'data_refresh'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              }`}
+            >
+              <Database className="w-3.5 h-3.5" />
+              <span>Data Refresh</span>
+            </button>
+            <button
               id="tab-map"
               onClick={() => setActiveTab('map')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -701,6 +715,10 @@ export default function App() {
 
         {activeTab === 'data_quality' && (
           <DataQualityView datasets={filteredDatasets} />
+        )}
+
+        {activeTab === 'data_refresh' && (
+          <DataRefreshView datasets={filteredDatasets} />
         )}
 
         {activeTab === 'map' && (
