@@ -109,3 +109,23 @@ test('live dataset contract rejects row-count mismatches', () => {
 test('live dataset contract rejects invalid row shapes', () => {
   assert.equal(isDataset({ ...validDataset, rows: [['Bo', 10]] }), false);
 });
+
+test('live dataset contract accepts complete provenance metadata', () => {
+  assert.equal(
+    isDataset({
+      ...validDataset,
+      source: 'Approved AVDP analytical warehouse',
+      reportingPeriod: '2025 Q4',
+      refreshedAt: '2025-12-19T08:00:00.000Z',
+      verificationStatus: 'Verified',
+    }),
+    true
+  );
+});
+
+test('live dataset contract rejects unsupported verification labels', () => {
+  assert.equal(
+    isDataset({ ...validDataset, verificationStatus: 'Official enough' }),
+    false
+  );
+});
