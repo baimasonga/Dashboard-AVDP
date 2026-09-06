@@ -38,6 +38,12 @@ export interface Dataset {
   reportingPeriod?: string;
   refreshedAt?: string;
   verificationStatus?: 'Verified' | 'Under review' | 'Draft';
+  rawRows?: Record<string, any>[];
+  validationAudit?: {
+    validatedAt: string;
+    approvedChanges: string[];
+    remainingIssues: number;
+  };
 }
 
 export interface FlowStep {

@@ -18,7 +18,6 @@ import {
   Database,
   ArrowRight,
   Sparkles,
-  Wand2,
   SlidersHorizontal,
 } from 'lucide-react';
 
@@ -142,6 +141,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
       numericColumns: numericCols,
       categoricalColumns: categoricalCols,
       rows: parsedRows,
+      rawRows: parsedRows.map((row) => ({ ...row })),
       rowCount: parsedRows.length,
       uploadedAt: new Date().toISOString().split('T')[0],
       isCustom: true,
@@ -195,40 +195,6 @@ Kambia District,Gbalamuya,4.0,"1,250",94`;
     const blob = new Blob([sampleCSV], { type: 'text/csv' });
     const file = new File([blob], `avcdp_${type}_field_data.csv`, { type: 'text/csv' });
     handleFileProcess(file);
-  };
-
-  // 1-Click Auto Clean helper within the modal
-  const handleQuickAutoClean = () => {
-    if (parsedRows.length === 0 || parsedCols.length === 0) return;
-    const result = DataCleaningService.autoCleanDataset(parsedRows, parsedCols, {
-      normalizeDistricts: true,
-      trimAndTitleCase: true,
-      parseNumericStrings: true,
-      imputeMissingNumeric: 'median',
-      imputeMissingText: 'mode',
-      handleOutliers: 'cap_iqr',
-      removeDuplicates: true,
-    });
-
-    setParsedRows(result.cleanedRows);
-
-    // Refresh detected numeric/categorical columns
-    const numCols: string[] = [];
-    const catCols: string[] = [];
-    parsedCols.forEach((col) => {
-      let hasNumber = false;
-      for (let i = 0; i < Math.min(result.cleanedRows.length, 20); i++) {
-        const val = result.cleanedRows[i][col];
-        if (typeof val === 'number' || (!isNaN(parseFloat(val)) && isFinite(val))) {
-          hasNumber = true;
-          break;
-        }
-      }
-      if (hasNumber) numCols.push(col);
-      else catCols.push(col);
-    });
-    setNumericCols(numCols);
-    setCategoricalCols(catCols);
   };
 
   return (
@@ -393,7 +359,7 @@ Kambia District,Gbalamuya,4.0,"1,250",94`;
                           <span>Data Health Index</span>
                           {validationReport.cellErrors.length === 0 ? (
                             <span className="px-1.5 py-0.2 rounded text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-700">
-                              Verified Clean
+                              No issues detected
                             </span>
                           ) : (
                             <span className="px-1.5 py-0.2 rounded text-[10px] bg-amber-950 text-amber-300 border border-amber-700">
@@ -403,32 +369,20 @@ Kambia District,Gbalamuya,4.0,"1,250",94`;
                         </span>
                         <p className="text-[11px] text-slate-400">
                           {validationReport.healthScore >= 85
-                            ? 'Great quality! Ready for spatial mapping and charts.'
-                            : 'Cleaning recommended before feeding to infographic widgets.'}
+                            ? 'No validation issues were detected in this preview.'
+                            : 'Review the flagged values before approving this dataset.'}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {validationReport.cellErrors.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={handleQuickAutoClean}
-                          className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500 hover:text-slate-950 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-                          title="Auto standardize district names, impute missing values, and cap outliers"
-                        >
-                          <Wand2 className="w-3.5 h-3.5" />
-                          <span>1-Click Auto Clean</span>
-                        </button>
-                      )}
-
                       <button
                         type="button"
                         onClick={() => setIsCleaningModalOpen(true)}
                         className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
                       >
                         <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Open Cleaning Studio</span>
+                        <span>Review validation issues</span>
                       </button>
                     </div>
                   </div>

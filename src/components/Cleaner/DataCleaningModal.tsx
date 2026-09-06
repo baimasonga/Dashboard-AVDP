@@ -13,7 +13,6 @@ import {
   Filter,
   Download,
   RotateCcw,
-  Wand2,
   Edit2,
   Check,
   X,
@@ -43,8 +42,9 @@ export const DataCleaningModal: React.FC<DataCleaningModalProps> = ({
     dataset.rows.map((r) => ({ ...r }))
   );
   const [originalRows] = useState<Record<string, any>[]>(() =>
-    dataset.rows.map((r) => ({ ...r }))
+    (dataset.rawRows || dataset.rows).map((r) => ({ ...r }))
   );
+  const [approvedChanges, setApprovedChanges] = useState<string[]>([]);
 
   // UI state
   const [filterMode, setFilterMode] = useState<'all' | 'issues_only' | 'missing_only' | 'outliers_only'>('all');
@@ -126,26 +126,6 @@ export const DataCleaningModal: React.FC<DataCleaningModalProps> = ({
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  // 1-Click Smart Clean All
-  const handleAutoCleanAll = () => {
-    const result = DataCleaningService.autoCleanDataset(rows, dataset.columns, {
-      normalizeDistricts: true,
-      trimAndTitleCase: true,
-      parseNumericStrings: true,
-      imputeMissingNumeric: 'median',
-      imputeMissingText: 'mode',
-      handleOutliers: 'cap_iqr',
-      removeDuplicates: true,
-    });
-
-    setRows(result.cleanedRows);
-    showToast(
-      result.changesApplied.length > 0
-        ? `Applied ${result.changesApplied.length} automated fixes! Data Health is now ${result.report.healthScore}%.`
-        : 'Dataset is already clean! No changes needed.'
-    );
-  };
-
   // Automated Suggestion: Standardize Districts
   const handleStandardizeDistricts = (column?: string) => {
     const targetCols = column ? [column] : dataset.columns;
@@ -169,45 +149,10 @@ export const DataCleaningModal: React.FC<DataCleaningModalProps> = ({
     });
 
     setRows(nextRows);
+    if (totalFixed > 0) {
+      setApprovedChanges((items) => [...items, `Standardized ${totalFixed} district value(s)`]);
+    }
     showToast(`Standardized ${totalFixed} Sierra Leone district name entries.`);
-  };
-
-  // Automated Suggestion: Impute Missing Values
-  const handleImputeMissing = (strategy: 'median' | 'mean' | 'zero') => {
-    const result = DataCleaningService.autoCleanDataset(rows, dataset.columns, {
-      imputeMissingNumeric: strategy,
-      imputeMissingText: 'mode',
-      normalizeDistricts: false,
-      trimAndTitleCase: false,
-      parseNumericStrings: false,
-      handleOutliers: 'none',
-      removeDuplicates: false,
-    });
-    setRows(result.cleanedRows);
-    showToast(`Imputed missing values using ${strategy} strategy.`);
-  };
-
-  // Automated Suggestion: Cap Outliers
-  const handleCapOutliers = () => {
-    const result = DataCleaningService.autoCleanDataset(rows, dataset.columns, {
-      handleOutliers: 'cap_iqr',
-      imputeMissingNumeric: 'none',
-      imputeMissingText: 'none',
-      normalizeDistricts: false,
-      trimAndTitleCase: false,
-      parseNumericStrings: false,
-      removeDuplicates: false,
-    });
-    setRows(result.cleanedRows);
-    showToast('Capped extreme outliers to 1.5x IQR statistical fences.');
-  };
-
-  // Column Level Imputation
-  const handleColumnImpute = (col: string, strategy: 'median' | 'mean' | 'zero') => {
-    const updated = DataCleaningService.imputeColumn(rows, col, strategy);
-    setRows(updated);
-    setActiveColMenu(null);
-    showToast(`Imputed missing values in "${col}" with ${strategy}.`);
   };
 
   // Manual Cell Edit
@@ -229,6 +174,7 @@ export const DataCleaningModal: React.FC<DataCleaningModalProps> = ({
 
     const updated = DataCleaningService.updateCell(rows, rowIndex, col, finalVal);
     setRows(updated);
+    setApprovedChanges((items) => [...items, `Manually edited row ${rowIndex + 1}, ${col}`]);
     setEditingCell(null);
   };
 
@@ -246,12 +192,14 @@ export const DataCleaningModal: React.FC<DataCleaningModalProps> = ({
       err.suggestedValue
     );
     setRows(updated);
+    setApprovedChanges((items) => [...items, `Accepted suggested value for row ${err.rowIndex + 1}, ${err.column}`]);
     showToast(`Applied suggestion "${err.suggestedValue}" to row #${err.rowIndex + 1}`);
   };
 
   // Reset to original imported data
   const handleResetToRaw = () => {
     setRows(originalRows.map((r) => ({ ...r })));
+    setApprovedChanges([]);
     showToast('Reverted all changes back to raw CSV data.');
   };
 
@@ -278,8 +226,34 @@ export const DataCleaningModal: React.FC<DataCleaningModalProps> = ({
     showToast('Cleaned dataset exported to CSV.');
   };
 
+  const handleDownloadValidationReport = () => {
+    const header = 'Row,Column,Issue,Severity,Current_Value,Suggested_Value,Message\n';
+    const body = report.cellErrors.map((error) =>
+      [
+        error.rowIndex + 1,
+        error.column,
+        error.errorType,
+        error.severity,
+        rows[error.rowIndex]?.[error.column] ?? '',
+        error.suggestedValue ?? '',
+        error.message,
+      ].map((value) => `"${String(value).replaceAll('"', '""')}"`).join(',')
+    ).join('\n');
+    const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${dataset.name.toLowerCase().replace(/\s+/g, '_')}_validation_report.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    showToast('Validation report downloaded. No source values were changed.');
+  };
+
   // Finalize & Save back to workspace
   const handleSaveWorkspace = () => {
+    if (approvedChanges.length > 0 && !window.confirm(
+      `Approve ${approvedChanges.length} documented change(s) and use the reviewed copy in the dashboard? The original upload will remain recoverable.`
+    )) return;
     // Re-detect numeric and categorical columns
     const numericCols = dataset.columns.filter((c) => {
       const numCount = rows.filter((r) => {
@@ -297,6 +271,12 @@ export const DataCleaningModal: React.FC<DataCleaningModalProps> = ({
       rowCount: rows.length,
       numericColumns: numericCols,
       categoricalColumns: categoricalCols,
+      rawRows: dataset.rawRows || originalRows,
+      validationAudit: {
+        validatedAt: new Date().toISOString(),
+        approvedChanges,
+        remainingIssues: report.cellErrors.length,
+      },
     };
 
     onSaveCleanedDataset(updatedDataset);
@@ -315,14 +295,14 @@ export const DataCleaningModal: React.FC<DataCleaningModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-white tracking-tight">
-                  Data Validation &amp; Cleaning Studio
+                  Assisted Data Validation
                 </h3>
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
                   {dataset.name}
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Identify &amp; fix missing values, non-standard district names, and statistical outliers before visualization
+                Review flagged values, approve individual corrections, and retain the original upload
               </p>
             </div>
           </div>
@@ -412,15 +392,8 @@ export const DataCleaningModal: React.FC<DataCleaningModalProps> = ({
             </div>
           </div>
 
-          {/* 1-Click Smart Clean Action */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleAutoCleanAll}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
-            >
-              <Wand2 className="w-4 h-4" />
-              <span>Auto-Clean All (1-Click)</span>
-            </button>
+          <div className="max-w-sm text-right text-[11px] leading-relaxed text-slate-400">
+            Validation never imputes missing values, caps outliers, or removes records automatically.
           </div>
         </div>
 
@@ -429,7 +402,7 @@ export const DataCleaningModal: React.FC<DataCleaningModalProps> = ({
           <div className="px-6 py-2.5 bg-slate-900 border-b border-slate-800/80 flex items-center gap-3 overflow-x-auto text-xs">
             <span className="text-slate-400 font-bold flex items-center gap-1 whitespace-nowrap text-[11px]">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Smart Recommendations:
+              Suggested review actions:
             </span>
 
             {report.formatIssueCount > 0 && (
@@ -442,25 +415,8 @@ export const DataCleaningModal: React.FC<DataCleaningModalProps> = ({
               </button>
             )}
 
-            {report.missingCount > 0 && (
-              <button
-                onClick={() => handleImputeMissing('median')}
-                className="px-2.5 py-1 rounded-md bg-rose-950/60 border border-rose-700/60 text-rose-300 hover:bg-rose-900/60 transition-colors whitespace-nowrap flex items-center gap-1.5"
-              >
-                <span>Fill Missing with Median</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-              </button>
-            )}
-
-            {report.outlierCount > 0 && (
-              <button
-                onClick={handleCapOutliers}
-                className="px-2.5 py-1 rounded-md bg-purple-950/60 border border-purple-700/60 text-purple-300 hover:bg-purple-900/60 transition-colors whitespace-nowrap flex items-center gap-1.5"
-              >
-                <span>Cap Outliers (1.5x IQR)</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-              </button>
-            )}
+            {report.missingCount > 0 && <span className="text-rose-300">Review missing values individually</span>}
+            {report.outlierCount > 0 && <span className="text-purple-300">Verify outliers against source documents</span>}
           </div>
         )}
 
@@ -615,32 +571,9 @@ export const DataCleaningModal: React.FC<DataCleaningModalProps> = ({
                             </div>
 
                             {summary?.detectedType === 'numeric' && (
-                              <>
-                                <button
-                                  onClick={() => handleColumnImpute(col, 'median')}
-                                  className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center justify-between"
-                                >
-                                  <span>Fill missing with Median</span>
-                                  <span className="text-emerald-400 font-mono text-[10px]">
-                                    {summary.median}
-                                  </span>
-                                </button>
-                                <button
-                                  onClick={() => handleColumnImpute(col, 'mean')}
-                                  className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded flex items-center justify-between"
-                                >
-                                  <span>Fill missing with Mean</span>
-                                  <span className="text-emerald-400 font-mono text-[10px]">
-                                    {summary.mean}
-                                  </span>
-                                </button>
-                                <button
-                                  onClick={() => handleColumnImpute(col, 'zero')}
-                                  className="w-full text-left px-2 py-1.5 hover:bg-slate-800 rounded"
-                                >
-                                  Fill missing with 0
-                                </button>
-                              </>
+                              <p className="px-2 py-1.5 text-[10px] leading-relaxed text-slate-500">
+                                Missing numeric values must be verified and edited individually; no values are imputed automatically.
+                              </p>
                             )}
 
                             {summary?.detectedType === 'district' && (
@@ -665,6 +598,7 @@ export const DataCleaningModal: React.FC<DataCleaningModalProps> = ({
                                   return r;
                                 });
                                 setRows(nextRows);
+                                setApprovedChanges((items) => [...items, `Trimmed whitespace in ${col}`]);
                                 setActiveColMenu(null);
                                 showToast(`Trimmed whitespace in "${col}"`);
                               }}
@@ -855,7 +789,14 @@ export const DataCleaningModal: React.FC<DataCleaningModalProps> = ({
               className="px-3 py-1.5 text-xs text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Download Cleaned CSV</span>
+              <span>Download reviewed copy</span>
+            </button>
+            <button
+              onClick={handleDownloadValidationReport}
+              className="px-3 py-1.5 text-xs text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Validation report</span>
             </button>
           </div>
 
@@ -871,7 +812,7 @@ export const DataCleaningModal: React.FC<DataCleaningModalProps> = ({
               className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
             >
               <Check className="w-4 h-4" />
-              <span>Apply &amp; Use Cleaned Data in Dashboard</span>
+              <span>Approve reviewed copy</span>
             </button>
           </div>
         </div>
