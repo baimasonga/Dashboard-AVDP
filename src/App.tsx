@@ -841,6 +841,7 @@ export default function App() {
         canvasState={canvasState}
         datasets={filteredDatasets}
         selectedDistrict={selectedDistrict}
+        selectedValueChain={selectedValueChain}
       />
 
       <CollabDrawer
