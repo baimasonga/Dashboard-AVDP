@@ -2,6 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { AVDP_ME_LOGFRAME } from '../../data/sierraLeoneData';
 import { MELogframeIndicator, ValueChainType } from '../../types';
 import {
+  calculateIndicatorMetric,
+  IndicatorPerformanceStatus,
+  interpolateTarget,
+} from '../../services/indicatorMetrics';
+import {
   AlertTriangle,
   Award,
   Calendar,
@@ -17,7 +22,7 @@ interface MELogframeViewProps {
 }
 
 type PeriodId = '2023-annual' | '2024-annual' | '2025-q2' | '2025-q3';
-type PaceStatus = 'on_track' | 'attention' | 'off_track';
+type PaceStatus = IndicatorPerformanceStatus;
 
 const REPORTING_PERIODS: Array<{
   id: PeriodId;
@@ -31,31 +36,10 @@ const REPORTING_PERIODS: Array<{
   { id: '2025-q3', label: '2025 Q3', projectElapsed: 0.82, actualScale: 1 },
 ];
 
-const isLowerBetter = (indicator: MELogframeIndicator) =>
-  indicator.finalTarget < indicator.baseline;
-
-const interpolate = (start: number, end: number, ratio: number) =>
-  start + (end - start) * ratio;
-
 const getPeriodActual = (
   indicator: MELogframeIndicator,
   actualScale: number
-) => interpolate(indicator.baseline, indicator.currentActual, actualScale);
-
-const getProgress = (
-  indicator: MELogframeIndicator,
-  actual: number
-) => {
-  const totalChange = indicator.finalTarget - indicator.baseline;
-  if (totalChange === 0) return 1;
-  return Math.max(0, (actual - indicator.baseline) / totalChange);
-};
-
-const getPaceStatus = (pacePct: number): PaceStatus => {
-  if (pacePct >= 90) return 'on_track';
-  if (pacePct >= 70) return 'attention';
-  return 'off_track';
-};
+) => interpolateTarget(indicator.baseline, indicator.currentActual, actualScale);
 
 const formatValue = (value: number) =>
   Math.abs(value) >= 1000
@@ -83,24 +67,21 @@ export const MELogframeView: React.FC<MELogframeViewProps> = ({
             ? indicator.districtBreakdown[selectedDistrict] * period.actualScale
             : null;
         const actual = districtActual ?? aggregateActual;
-        const expectedValue = interpolate(
-          indicator.baseline,
-          indicator.finalTarget,
-          period.projectElapsed
-        );
-        const actualProgress = getProgress(indicator, aggregateActual);
-        const expectedProgress = Math.max(0.01, period.projectElapsed);
-        const pacePct = Math.max(0, (actualProgress / expectedProgress) * 100);
-        const status = getPaceStatus(pacePct);
+        const metric = calculateIndicatorMetric({
+          baseline: indicator.baseline,
+          target: indicator.finalTarget,
+          actual: aggregateActual,
+          elapsedRatio: period.projectElapsed,
+        });
 
         return {
           indicator,
           actual,
           aggregateActual,
-          expectedValue,
-          finalAchievementPct: Math.max(0, getProgress(indicator, aggregateActual) * 100),
-          pacePct,
-          status,
+          expectedValue: metric.expectedValue,
+          finalAchievementPct: metric.achievementPct ?? 0,
+          pacePct: metric.pacePct ?? 0,
+          status: metric.status,
           districtScoped: districtActual !== null,
         };
       }),
@@ -127,7 +108,9 @@ export const MELogframeView: React.FC<MELogframeViewProps> = ({
     return true;
   });
 
-  const onTrackCount = evaluated.filter((item) => item.status === 'on_track').length;
+  const onTrackCount = evaluated.filter((item) =>
+    ['on_track', 'target_achieved'].includes(item.status)
+  ).length;
   const attentionCount = evaluated.filter((item) => item.status === 'attention').length;
   const offTrackCount = evaluated.filter((item) => item.status === 'off_track').length;
   const overallPace = Math.round(
@@ -264,6 +247,9 @@ export const MELogframeView: React.FC<MELogframeViewProps> = ({
             <option value="on_track">On track</option>
             <option value="attention">Attention</option>
             <option value="off_track">Off track</option>
+            <option value="target_achieved">Target achieved</option>
+            <option value="not_reported">Not reported</option>
+            <option value="provisional">Provisional</option>
           </select>
           <button
             type="button"
@@ -338,7 +324,7 @@ export const MELogframeView: React.FC<MELogframeViewProps> = ({
                         <div className="mb-1 flex items-center justify-between text-[10px]">
                           <span
                             className={
-                              status === 'on_track'
+                              status === 'on_track' || status === 'target_achieved'
                                 ? 'text-emerald-400'
                                 : status === 'attention'
                                 ? 'text-amber-400'
@@ -352,7 +338,7 @@ export const MELogframeView: React.FC<MELogframeViewProps> = ({
                         <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
                           <div
                             className={`h-full rounded-full ${
-                              status === 'on_track'
+                              status === 'on_track' || status === 'target_achieved'
                                 ? 'bg-emerald-500'
                                 : status === 'attention'
                                 ? 'bg-amber-500'

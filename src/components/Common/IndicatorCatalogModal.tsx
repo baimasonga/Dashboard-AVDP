@@ -153,6 +153,20 @@ export const IndicatorCatalogModal: React.FC<IndicatorCatalogModalProps> = ({
                         <dt className="font-semibold text-slate-500">Disaggregation</dt>
                         <dd className="mt-1 text-slate-300">{indicator.disaggregation.join(' • ')}</dd>
                       </div>
+                      <div>
+                        <dt className="font-semibold text-slate-500">Targets</dt>
+                        <dd className="mt-1 text-slate-300">
+                          Baseline: {indicator.baseline ?? 'Pending'} • Annual: {indicator.annualTarget ?? 'Pending'} • Life of project: {indicator.lifeOfProjectTarget ?? 'Pending'}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="font-semibold text-slate-500">Accountability</dt>
+                        <dd className="mt-1 text-slate-300">{indicator.responsibleUnit} • {indicator.lastReportingPeriod}</dd>
+                      </div>
+                      <div>
+                        <dt className="font-semibold text-slate-500">Data quality</dt>
+                        <dd className="mt-1 capitalize text-slate-300">{indicator.dataQualityStatus.replace('_', ' ')}</dd>
+                      </div>
                     </dl>
                   </article>
                 );

@@ -34,6 +34,7 @@ Run:
 
 ```bash
 bun run lint
+bun run test
 bun run build
 ```
 
@@ -77,7 +78,7 @@ The next implementation stages are:
 
 1. connect a persistent analytical database;
 2. introduce a data-source registry and import history;
-3. centralize indicator definitions and calculations;
+3. reconcile the indicator catalogue targets with the approved AVDP logframe;
 4. add global reporting-period and district filters;
 5. connect approved AVDP extracts while retaining demonstration mode; and
 6. introduce controlled access for internal and public dashboard views.

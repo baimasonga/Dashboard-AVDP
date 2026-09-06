@@ -27,7 +27,23 @@ export interface IndicatorDefinition {
   disaggregation: string[];
   definition: string;
   status: DataClassification;
+  baseline: number | null;
+  annualTarget: number | null;
+  lifeOfProjectTarget: number | null;
+  responsibleUnit: string;
+  lastReportingPeriod: string;
+  dataQualityStatus: 'not_assessed' | 'provisional' | 'verified' | 'demonstration';
 }
+
+type IndicatorSeed = Omit<
+  IndicatorDefinition,
+  | 'baseline'
+  | 'annualTarget'
+  | 'lifeOfProjectTarget'
+  | 'responsibleUnit'
+  | 'lastReportingPeriod'
+  | 'dataQualityStatus'
+>;
 
 export const DATA_SOURCES: DataSourceDefinition[] = [
   {
@@ -72,7 +88,7 @@ export const DATA_SOURCES: DataSourceDefinition[] = [
   },
 ];
 
-export const INDICATOR_CATALOG: IndicatorDefinition[] = [
+const INDICATOR_SEEDS: IndicatorSeed[] = [
   {
     id: 'beneficiary-households',
     code: 'AVDP-OUT-01',
@@ -230,6 +246,20 @@ export const INDICATOR_CATALOG: IndicatorDefinition[] = [
     status: 'demonstration',
   },
 ];
+
+export const INDICATOR_CATALOG: IndicatorDefinition[] = INDICATOR_SEEDS.map(
+  (indicator) => ({
+    ...indicator,
+    baseline: null,
+    annualTarget: null,
+    lifeOfProjectTarget: null,
+    responsibleUnit:
+      DATA_SOURCES.find((source) => source.id === indicator.sourceId)?.owner ||
+      'Pending assignment',
+    lastReportingPeriod: 'Demonstration snapshot',
+    dataQualityStatus: 'demonstration',
+  })
+);
 
 export const getDataSource = (sourceId: string) =>
   DATA_SOURCES.find((source) => source.id === sourceId);
