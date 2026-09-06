@@ -1,338 +1,384 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AVDP_ME_LOGFRAME } from '../../data/sierraLeoneData';
-import { MELogframeIndicator } from '../../types';
+import { MELogframeIndicator, ValueChainType } from '../../types';
 import {
-  Award,
-  CheckCircle2,
   AlertTriangle,
+  Award,
+  Calendar,
+  CheckCircle2,
   Clock,
-  TrendingUp,
   Download,
-  Filter,
-  Plus,
-  ShieldCheck,
-  Building,
-  Users,
   Search,
 } from 'lucide-react';
 
-export const MELogframeView: React.FC = () => {
-  const [indicators, setIndicators] = useState<MELogframeIndicator[]>(AVDP_ME_LOGFRAME);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [tierFilter, setTierFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [newActualVal, setNewActualVal] = useState<number>(0);
+interface MELogframeViewProps {
+  selectedDistrict?: string | null;
+  selectedValueChain?: ValueChainType;
+}
 
-  const filtered = indicators.filter((item) => {
-    if (statusFilter !== 'all' && item.status !== statusFilter) return false;
-    if (tierFilter !== 'all' && item.tier !== tierFilter) return false;
+type PeriodId = '2023-annual' | '2024-annual' | '2025-q2' | '2025-q3';
+type PaceStatus = 'on_track' | 'attention' | 'off_track';
+
+const REPORTING_PERIODS: Array<{
+  id: PeriodId;
+  label: string;
+  projectElapsed: number;
+  actualScale: number;
+}> = [
+  { id: '2023-annual', label: '2023 Annual', projectElapsed: 0.35, actualScale: 0.42 },
+  { id: '2024-annual', label: '2024 Annual', projectElapsed: 0.6, actualScale: 0.72 },
+  { id: '2025-q2', label: '2025 Q2', projectElapsed: 0.76, actualScale: 0.9 },
+  { id: '2025-q3', label: '2025 Q3', projectElapsed: 0.82, actualScale: 1 },
+];
+
+const isLowerBetter = (indicator: MELogframeIndicator) =>
+  indicator.finalTarget < indicator.baseline;
+
+const interpolate = (start: number, end: number, ratio: number) =>
+  start + (end - start) * ratio;
+
+const getPeriodActual = (
+  indicator: MELogframeIndicator,
+  actualScale: number
+) => interpolate(indicator.baseline, indicator.currentActual, actualScale);
+
+const getProgress = (
+  indicator: MELogframeIndicator,
+  actual: number
+) => {
+  const totalChange = indicator.finalTarget - indicator.baseline;
+  if (totalChange === 0) return 1;
+  return Math.max(0, (actual - indicator.baseline) / totalChange);
+};
+
+const getPaceStatus = (pacePct: number): PaceStatus => {
+  if (pacePct >= 90) return 'on_track';
+  if (pacePct >= 70) return 'attention';
+  return 'off_track';
+};
+
+const formatValue = (value: number) =>
+  Math.abs(value) >= 1000
+    ? Math.round(value).toLocaleString()
+    : Number(value.toFixed(2)).toLocaleString();
+
+export const MELogframeView: React.FC<MELogframeViewProps> = ({
+  selectedDistrict = null,
+  selectedValueChain = 'All Value Chains',
+}) => {
+  const [periodId, setPeriodId] = useState<PeriodId>('2025-q3');
+  const [statusFilter, setStatusFilter] = useState<'all' | PaceStatus>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const period =
+    REPORTING_PERIODS.find((item) => item.id === periodId) ||
+    REPORTING_PERIODS[REPORTING_PERIODS.length - 1];
+
+  const evaluated = useMemo(
+    () =>
+      AVDP_ME_LOGFRAME.map((indicator) => {
+        const aggregateActual = getPeriodActual(indicator, period.actualScale);
+        const districtActual =
+          selectedDistrict && indicator.districtBreakdown[selectedDistrict] !== undefined
+            ? indicator.districtBreakdown[selectedDistrict] * period.actualScale
+            : null;
+        const actual = districtActual ?? aggregateActual;
+        const expectedValue = interpolate(
+          indicator.baseline,
+          indicator.finalTarget,
+          period.projectElapsed
+        );
+        const actualProgress = getProgress(indicator, aggregateActual);
+        const expectedProgress = Math.max(0.01, period.projectElapsed);
+        const pacePct = Math.max(0, (actualProgress / expectedProgress) * 100);
+        const status = getPaceStatus(pacePct);
+
+        return {
+          indicator,
+          actual,
+          aggregateActual,
+          expectedValue,
+          finalAchievementPct: Math.max(0, getProgress(indicator, aggregateActual) * 100),
+          pacePct,
+          status,
+          districtScoped: districtActual !== null,
+        };
+      }),
+    [period, selectedDistrict]
+  );
+
+  const filtered = evaluated.filter(({ indicator, status }) => {
+    if (
+      selectedValueChain !== 'All Value Chains' &&
+      indicator.valueChain !== selectedValueChain &&
+      indicator.valueChain !== 'All Value Chains'
+    ) {
+      return false;
+    }
+    if (statusFilter !== 'all' && status !== statusFilter) return false;
     if (searchQuery) {
-      const q = searchQuery.toLowerCase();
+      const query = searchQuery.toLowerCase();
       return (
-        item.code.toLowerCase().includes(q) ||
-        item.indicator.toLowerCase().includes(q) ||
-        item.valueChain.toLowerCase().includes(q)
+        indicator.code.toLowerCase().includes(query) ||
+        indicator.indicator.toLowerCase().includes(query) ||
+        indicator.component.toLowerCase().includes(query)
       );
     }
     return true;
   });
 
-  // Calculate Overall Completion
-  const onTrackCount = indicators.filter((i) => i.status === 'on_track').length;
-  const moderateCount = indicators.filter((i) => i.status === 'moderate').length;
-  const laggingCount = indicators.filter((i) => i.status === 'lagging').length;
-  const overallScore = Math.round(
-    indicators.reduce((acc, curr) => acc + (curr.actual2024 / curr.target2025) * 100, 0) /
-      indicators.length
+  const onTrackCount = evaluated.filter((item) => item.status === 'on_track').length;
+  const attentionCount = evaluated.filter((item) => item.status === 'attention').length;
+  const offTrackCount = evaluated.filter((item) => item.status === 'off_track').length;
+  const overallPace = Math.round(
+    evaluated.reduce((sum, item) => sum + item.pacePct, 0) /
+      Math.max(1, evaluated.length)
   );
 
-  const handleUpdateActual = (id: string) => {
-    setIndicators((prev) =>
-      prev.map((ind) => {
-        if (ind.id === id) {
-          const updatedActual = Number(newActualVal);
-          const pct = (updatedActual / ind.target2025) * 100;
-          const status = pct >= 85 ? 'on_track' : pct >= 65 ? 'moderate' : 'lagging';
-          return {
-            ...ind,
-            actual2024: updatedActual,
-            status,
-          };
-        }
-        return ind;
-      })
-    );
-    setEditingId(null);
-  };
-
-  const exportMELogframeCSV = () => {
-    const headers = 'Code,Tier,Indicator,Value_Chain,Baseline,Target_2025,Actual_2024,Unit,Status,Risk_Rating\n';
-    const rows = indicators
-      .map(
-        (i) =>
-          `"${i.code}","${i.tier}","${i.indicator}","${i.valueChain}",${i.baseline},${i.target2025},${i.actual2024},"${i.unit}","${i.status}","${i.riskRating}"`
+  const exportCsv = () => {
+    const headers =
+      'Reporting_Period,Code,Component,Indicator,Value_Chain,Scope,Baseline,Expected_To_Date,Demonstration_Actual,Final_Target,Final_Achievement_Pct,Pace_Pct,Pace_Status,Unit,Data_Status\n';
+    const rows = filtered
+      .map(({ indicator, actual, expectedValue, finalAchievementPct, pacePct, status }) =>
+        [
+          period.label,
+          indicator.code,
+          indicator.component,
+          indicator.indicator,
+          indicator.valueChain,
+          selectedDistrict || 'Project aggregate',
+          indicator.baseline,
+          expectedValue.toFixed(2),
+          actual.toFixed(2),
+          indicator.finalTarget,
+          finalAchievementPct.toFixed(1),
+          pacePct.toFixed(1),
+          status,
+          indicator.unit,
+          'Demonstration',
+        ]
+          .map((value) => `"${String(value).replaceAll('"', '""')}"`)
+          .join(',')
       )
       .join('\n');
-    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'sierra_leone_avcdp_me_logframe.csv';
-    a.click();
+
+    const url = URL.createObjectURL(
+      new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' })
+    );
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `avdp_demo_logframe_${period.id}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
     <div className="space-y-5">
-      {/* Top Executive KPI Banner */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Overall M&E Score</span>
-            <Award className="w-4 h-4 text-emerald-400" />
+      <section className="flex flex-col gap-3 rounded-xl border border-amber-800/60 bg-amber-950/30 p-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-200">
+            <Calendar className="h-4 w-4" aria-hidden="true" />
+            Demonstration reporting period
           </div>
-          <div className="mt-2">
-            <span className="text-3xl font-extrabold text-white">{overallScore}%</span>
-            <span className="text-xs text-emerald-400 font-medium ml-2">Progress toward 2025 Target</span>
-          </div>
-          <div className="w-full h-1.5 bg-slate-800 rounded-full mt-3 overflow-hidden">
-            <div
-              className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(100, overallScore)}%` }}
-            />
-          </div>
+          <p className="mt-1 text-[11px] text-amber-300/80">
+            Period values are illustrative interpolations used to test time-aware monitoring. They are not official historical results.
+          </p>
         </div>
+        <label className="flex items-center gap-2 text-xs font-semibold text-slate-300">
+          Period
+          <select
+            value={periodId}
+            onChange={(event) => setPeriodId(event.target.value as PeriodId)}
+            className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white outline-none focus:border-emerald-500"
+          >
+            {REPORTING_PERIODS.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </section>
 
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>On-Track Indicators</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="mt-2">
-            <span className="text-3xl font-extrabold text-emerald-400">{onTrackCount}</span>
-            <span className="text-xs text-slate-400 ml-2">of {indicators.length} targets</span>
-          </div>
-          <div className="text-[11px] text-slate-400 mt-2">&gt; 85% milestones achieved</div>
-        </div>
-
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Moderate / Watchlist</span>
-            <Clock className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className="mt-2">
-            <span className="text-3xl font-extrabold text-amber-400">{moderateCount}</span>
-            <span className="text-xs text-slate-400 ml-2">requiring field support</span>
-          </div>
-          <div className="text-[11px] text-slate-400 mt-2">65% - 85% progress band</div>
-        </div>
-
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Lagging Targets</span>
-            <AlertTriangle className="w-4 h-4 text-rose-400" />
-          </div>
-          <div className="mt-2">
-            <span className="text-3xl font-extrabold text-rose-400">{laggingCount}</span>
-            <span className="text-xs text-slate-400 ml-2">action items</span>
-          </div>
-          <div className="text-[11px] text-slate-400 mt-2">Remedial actions triggered</div>
-        </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        {[
+          {
+            label: 'Performance against expected pace',
+            value: `${overallPace}%`,
+            detail: `${Math.round(period.projectElapsed * 100)}% of project period elapsed`,
+            icon: Award,
+            color: 'text-white',
+          },
+          {
+            label: 'On track',
+            value: onTrackCount,
+            detail: 'At least 90% of expected progress',
+            icon: CheckCircle2,
+            color: 'text-emerald-400',
+          },
+          {
+            label: 'Attention',
+            value: attentionCount,
+            detail: '70–89% of expected progress',
+            icon: Clock,
+            color: 'text-amber-400',
+          },
+          {
+            label: 'Off track',
+            value: offTrackCount,
+            detail: 'Below 70% of expected progress',
+            icon: AlertTriangle,
+            color: 'text-rose-400',
+          },
+        ].map(({ label, value, detail, icon: Icon, color }) => (
+          <article key={label} className="rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-lg">
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>{label}</span>
+              <Icon className={`h-4 w-4 ${color}`} aria-hidden="true" />
+            </div>
+            <div className={`mt-2 text-3xl font-extrabold ${color}`}>{value}</div>
+            <div className="mt-2 text-[11px] text-slate-500">{detail}</div>
+          </article>
+        ))}
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-slate-900/80 border border-slate-800 rounded-xl">
-        <div className="flex items-center gap-3 flex-1 min-w-[260px]">
-          <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search M&E indicator code or description..."
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-800 border border-slate-700/80 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-            />
-          </div>
+      <div className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900/80 p-3.5 lg:flex-row lg:items-center lg:justify-between">
+        <label className="relative flex-1">
+          <span className="sr-only">Search M&E indicators</span>
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search indicator code, component or description"
+            className="w-full rounded-lg border border-slate-700/80 bg-slate-800 py-2 pl-9 pr-3 text-xs text-white outline-none placeholder:text-slate-500 focus:border-emerald-500"
+          />
+        </label>
 
-          {/* Tier Filter */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setTierFilter('all')}
-              className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                tierFilter === 'all' ? 'bg-slate-700 text-white font-semibold' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              All Tiers
-            </button>
-            <button
-              onClick={() => setTierFilter('impact')}
-              className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                tierFilter === 'impact' ? 'bg-emerald-950 text-emerald-400 border border-emerald-700 font-semibold' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Impact
-            </button>
-            <button
-              onClick={() => setTierFilter('outcome')}
-              className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                tierFilter === 'outcome' ? 'bg-sky-950 text-sky-400 border border-sky-700 font-semibold' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Outcome
-            </button>
-            <button
-              onClick={() => setTierFilter('output')}
-              className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                tierFilter === 'output' ? 'bg-amber-950 text-amber-400 border border-amber-700 font-semibold' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Output
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Status Filter */}
+        <div className="flex flex-wrap gap-2">
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-300 focus:outline-none"
+            onChange={(event) => setStatusFilter(event.target.value as 'all' | PaceStatus)}
+            className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-slate-300 outline-none"
           >
-            <option value="all">All Statuses</option>
-            <option value="on_track">On Track (&gt;85%)</option>
-            <option value="moderate">Moderate (65-85%)</option>
-            <option value="lagging">Lagging (&lt;65%)</option>
+            <option value="all">All pace statuses</option>
+            <option value="on_track">On track</option>
+            <option value="attention">Attention</option>
+            <option value="off_track">Off track</option>
           </select>
-
-          {/* Export button */}
           <button
-            onClick={exportMELogframeCSV}
-            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700"
+            type="button"
+            onClick={exportCsv}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 transition-colors hover:bg-slate-700 hover:text-white"
           >
-            <Download className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Export Logframe CSV</span>
+            <Download className="h-3.5 w-3.5 text-emerald-400" />
+            Export filtered CSV
           </button>
         </div>
       </div>
 
-      {/* Table of Indicators */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/90 shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-800/80 text-[11px] uppercase tracking-wider text-slate-400 font-semibold border-b border-slate-700/80">
+            <thead className="border-b border-slate-700/80 bg-slate-800/80 text-[11px] uppercase tracking-wider text-slate-400">
               <tr>
-                <th className="px-4 py-3.5">Code</th>
-                <th className="px-4 py-3.5">Indicator Description</th>
-                <th className="px-4 py-3.5">Value Chain</th>
+                <th className="px-4 py-3.5">Indicator</th>
+                <th className="px-4 py-3.5">Scope</th>
                 <th className="px-4 py-3.5 text-right">Baseline</th>
-                <th className="px-4 py-3.5 text-right">Target 2025</th>
-                <th className="px-4 py-3.5 text-right">Actual 2024</th>
-                <th className="px-4 py-3.5 text-center">Progress %</th>
-                <th className="px-4 py-3.5 text-center">Status</th>
-                <th className="px-4 py-3.5 text-center">Actions</th>
+                <th className="px-4 py-3.5 text-right">Expected to date</th>
+                <th className="px-4 py-3.5 text-right">Demo actual</th>
+                <th className="px-4 py-3.5 text-right">Final target</th>
+                <th className="px-4 py-3.5 text-center">Final achievement</th>
+                <th className="px-4 py-3.5 text-center">Expected pace</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/70">
-              {filtered.map((item) => {
-                const pct = Math.round((item.actual2024 / item.target2025) * 100);
-                const isEditing = editingId === item.id;
-
-                return (
-                  <tr key={item.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="px-4 py-3 font-mono font-bold text-white whitespace-nowrap">
-                      <span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700/80">
-                        {item.code}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 max-w-sm">
-                      <div className="font-semibold text-white">{item.indicator}</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-2">
-                        <span className="uppercase font-semibold text-emerald-400">{item.tier}</span>
-                        <span>• Verification: {item.meansOfVerification}</span>
+              {filtered.map(
+                ({
+                  indicator,
+                  actual,
+                  expectedValue,
+                  finalAchievementPct,
+                  pacePct,
+                  status,
+                  districtScoped,
+                }) => (
+                  <tr key={indicator.id} className="transition-colors hover:bg-slate-800/40">
+                    <td className="max-w-md px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="rounded border border-slate-700 bg-slate-800 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-300">
+                          {indicator.code}
+                        </span>
+                        <span className="text-[10px] text-slate-500">{indicator.component}</span>
+                      </div>
+                      <div className="mt-1.5 font-semibold text-white">{indicator.indicator}</div>
+                      <div className="mt-1 text-[10px] text-slate-500">
+                        {indicator.valueChain} • Demonstration
                       </div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="text-[11px] font-medium text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/50">
-                        {item.valueChain}
-                      </span>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-400">
+                      {districtScoped ? selectedDistrict : 'Project aggregate'}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-slate-400">
-                      {item.baseline.toLocaleString()} {item.unit}
+                    <td className="whitespace-nowrap px-4 py-3 text-right">
+                      {formatValue(indicator.baseline)} {indicator.unit}
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-slate-200">
-                      {item.target2025.toLocaleString()} {item.unit}
+                    <td className="whitespace-nowrap px-4 py-3 text-right font-semibold text-sky-300">
+                      {formatValue(expectedValue)} {indicator.unit}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      {isEditing ? (
-                        <div className="flex items-center justify-end gap-1">
-                          <input
-                            type="number"
-                            value={newActualVal}
-                            onChange={(e) => setNewActualVal(Number(e.target.value))}
-                            className="w-20 px-1.5 py-0.5 bg-slate-800 border border-emerald-500 rounded text-right text-xs text-white"
-                          />
-                          <button
-                            onClick={() => handleUpdateActual(item.id)}
-                            className="px-1.5 py-0.5 bg-emerald-500 text-slate-950 font-bold rounded text-[10px]"
-                          >
-                            Save
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="font-extrabold text-emerald-400">
-                          {item.actual2024.toLocaleString()} {item.unit}
-                        </span>
-                      )}
+                    <td className="whitespace-nowrap px-4 py-3 text-right font-bold text-white">
+                      {formatValue(actual)} {indicator.unit}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right">
+                      {formatValue(indicator.finalTarget)} {indicator.unit}
+                    </td>
+                    <td className="px-4 py-3 text-center font-bold text-slate-200">
+                      {Math.round(finalAchievementPct)}%
                     </td>
                     <td className="px-4 py-3">
-                      <div className="w-28 mx-auto">
-                        <div className="flex items-center justify-between text-[10px] mb-1">
-                          <span className="font-bold text-white">{pct}%</span>
+                      <div className="mx-auto w-32">
+                        <div className="mb-1 flex items-center justify-between text-[10px]">
+                          <span
+                            className={
+                              status === 'on_track'
+                                ? 'text-emerald-400'
+                                : status === 'attention'
+                                ? 'text-amber-400'
+                                : 'text-rose-400'
+                            }
+                          >
+                            {status.replace('_', ' ')}
+                          </span>
+                          <span className="font-bold text-white">{Math.round(pacePct)}%</span>
                         </div>
-                        <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
                           <div
                             className={`h-full rounded-full ${
-                              pct >= 85 ? 'bg-emerald-500' : pct >= 65 ? 'bg-amber-500' : 'bg-rose-500'
+                              status === 'on_track'
+                                ? 'bg-emerald-500'
+                                : status === 'attention'
+                                ? 'bg-amber-500'
+                                : 'bg-rose-500'
                             }`}
-                            style={{ width: `${Math.min(100, pct)}%` }}
+                            style={{ width: `${Math.min(100, pacePct)}%` }}
                           />
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-center whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                          item.status === 'on_track'
-                            ? 'bg-emerald-950 text-emerald-300 border-emerald-700'
-                            : item.status === 'moderate'
-                            ? 'bg-amber-950 text-amber-300 border-amber-700'
-                            : 'bg-rose-950 text-rose-300 border-rose-700'
-                        }`}
-                      >
-                        {item.status === 'on_track' && <CheckCircle2 className="w-3 h-3" />}
-                        {item.status === 'moderate' && <Clock className="w-3 h-3" />}
-                        {item.status === 'lagging' && <AlertTriangle className="w-3 h-3" />}
-                        <span className="capitalize">{item.status.replace('_', ' ')}</span>
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={() => {
-                          setEditingId(item.id);
-                          setNewActualVal(item.actual2024);
-                        }}
-                        className="px-2 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded transition-colors"
-                      >
-                        Update Actual
-                      </button>
-                    </td>
                   </tr>
-                );
-              })}
+                )
+              )}
             </tbody>
           </table>
         </div>
+        {filtered.length === 0 && (
+          <div className="px-6 py-12 text-center text-sm text-slate-500">
+            No indicators match the selected dashboard filters.
+          </div>
+        )}
       </div>
+
+      <p className="text-[11px] text-slate-500">
+        Direction is derived from baseline and final target, so indicators where a lower value is better are evaluated correctly. The selected district is used only where a district breakdown exists.
+      </p>
     </div>
   );
 };
