@@ -1,0 +1,496 @@
+/**
+ * Sierra Leone AVDP Farmer Field Schools (FFS) Data (Component 1)
+ * Experiential farmer learning, agro-ecological demonstration plots, Good Agricultural Practices (GAP),
+ * System of Rice Intensification (SRI), and cocoa/oil palm rehabilitation across 16 districts.
+ * Extended Project Lifecycle: 2019–2027
+ */
+
+export interface FFSGroup {
+  id: string;
+  name: string;
+  district: string;
+  chiefdom: string;
+  community: string;
+  valueChain: 'Rice (IVS)' | 'Cocoa' | 'Oil Palm' | 'Cassava & Legumes';
+  facilitatorName: string;
+  facilitatorType: 'MAFS Extension Agent' | 'Community Master Trainer' | 'FBO Lead Farmer';
+  cycleCohort: 'Cohort 1 (2019-2021)' | 'Cohort 2 (2021-2023)' | 'Cohort 3 (2023-2025)' | 'Cohort 4 (2025-2027)';
+  totalEnrolled: number;
+  womenLearners: number;
+  youthLearners: number; // 18-35 years
+  graduatedCount: number;
+  status: 'Graduated' | 'Active In-Session' | 'Post-Graduation Mentoring';
+  demoPlotAreaHa: number;
+  demoPracticeFocus: string;
+  baselineYieldMTPerHa: number;
+  achievedYieldMTPerHa: number;
+  yieldGainPct: number;
+  coordinates: [number, number]; // [lat, lng]
+}
+
+export interface FFSDistrictSummary {
+  district: string;
+  region: 'Eastern' | 'Southern' | 'Northern' | 'North Western' | 'Western Area';
+  ffsGroupsCount: number;
+  totalFarmersTrained: number;
+  womenPercentage: number;
+  youthPercentage: number;
+  demoHectares: number;
+  leadCommodities: string[];
+  adoptionRatePct: number;
+  avgYieldIncreasePct: number;
+}
+
+export interface FFSCurriculumModule {
+  id: string;
+  moduleCode: string;
+  title: string;
+  category: 'Agronomy & Soil' | 'Crop Protection' | 'Harvest & Quality' | 'Agribusiness & Governance';
+  targetCommodity: string;
+  durationWeeks: number;
+  practicalFieldHours: number;
+  description: string;
+  coreCompetencies: string[];
+  fieldExperimentType: string;
+}
+
+export const FFS_OVERVIEW_METRICS = {
+  totalFfsEstablished: 1450,
+  cumulativeGraduates: 43500,
+  womenGraduates: 25404,
+  womenPercentage: 58.4,
+  youthGraduates: 14442,
+  youthPercentage: 33.2,
+  demoPlotsHectares: 2175,
+  masterTrainersCertified: 290,
+  communityFacilitators: 580,
+  practiceAdoptionRatePct: 81.6,
+  averageYieldIncreasePct: 58.3,
+  activeCurriculumModules: 18,
+  districtsActive: 16,
+  lifecycleSpan: '2019–2027',
+  postHarvestLossReductionPct: 44.5,
+  agroChemicalUseReductionPct: 37.0,
+  grossFarmIncomeIncreasePct: 62.4,
+};
+
+export const FFS_CURRICULUM_MODULES: FFSCurriculumModule[] = [
+  {
+    id: 'mod_sri_rice',
+    moduleCode: 'FFS-RICE-01',
+    title: 'System of Rice Intensification (SRI) in Inland Valley Swamps (IVS)',
+    category: 'Agronomy & Soil',
+    targetCommodity: 'Inland Valley Swamp Rice',
+    durationWeeks: 16,
+    practicalFieldHours: 48,
+    description: 'Practical training on single seedling transplantation (8-12 days old), wide square spacing (25x25cm), intermittent water regime, and organic soil enrichment to maximize tillering and root depth.',
+    coreCompetencies: [
+      'Nursery preparation & tender seedling handling',
+      'Water level regulation via peripheral and central bunds',
+      'Mechanical rotary weeding and soil aeration',
+      'Panicle initiation monitoring and moisture retention',
+    ],
+    fieldExperimentType: 'Comparative trial: Traditional broadcast vs. Conventional transplanting vs. SRI grid spacing',
+  },
+  {
+    id: 'mod_cocoa_rehab',
+    moduleCode: 'FFS-COC-02',
+    title: 'Cocoa Plantation Rehabilitation, Pruning & Side-Grafting',
+    category: 'Crop Protection',
+    targetCommodity: 'Cocoa',
+    durationWeeks: 20,
+    practicalFieldHours: 60,
+    description: 'Hands-on rejuvenation of moribund 25+ year-old cocoa groves using top-working, high-yielding hybrid scions, sanitary canopy pruning, and black pod disease phytosanitation.',
+    coreCompetencies: [
+      'Identification of chupons vs. fan branches for architectural pruning',
+      'Wedge and patch budding techniques on old rootstocks',
+      'Black Pod (Phytophthora) cultural management without synthetic chemicals',
+      'Indigenous shade tree integration (Terminalia, Albizia, Fruit species)',
+    ],
+    fieldExperimentType: 'Split-plot demonstration: Unpruned old stand vs. Canopy pruned vs. Grafted clonal scions',
+  },
+  {
+    id: 'mod_oilpalm_bmp',
+    moduleCode: 'FFS-PALM-03',
+    title: 'Tenera Oil Palm Best Management Practices & Frond Pruning',
+    category: 'Agronomy & Soil',
+    targetCommodity: 'Oil Palm',
+    durationWeeks: 14,
+    practicalFieldHours: 42,
+    description: 'Nursery seedling selection, equilateral triangular planting geometry (9m spacing), circle weeding, balanced frond retention, and assisted pollination for higher Fresh Fruit Bunch (FFB) oil extraction rates.',
+    coreCompetencies: [
+      'Seedling culling of abnormal nursery ramets',
+      'Legume cover cropping (Mucuna / Pueraria) for nitrogen fixation',
+      'Selective frond pruning retaining 32-40 active leaves',
+      'Ripe bunch harvesting criteria based on loose fruit detachments',
+    ],
+    fieldExperimentType: 'Fertilization demo: Zero fertilizer vs. Chemical NPK vs. Empty fruit bunch (EFB) mulch recycling',
+  },
+  {
+    id: 'mod_ipm_bio',
+    moduleCode: 'FFS-IPM-04',
+    title: 'Integrated Pest Management (IPM) & Agro-Ecosystem Analysis (AESA)',
+    category: 'Crop Protection',
+    targetCommodity: 'Multi-Commodity',
+    durationWeeks: 12,
+    practicalFieldHours: 36,
+    description: 'Weekly Agro-Ecosystem Analysis (AESA) routine where farmers sketch plant health, count beneficial natural predators (spiders, parasitoids) vs. pests (stem borers, mirids), and decide interventions collaboratively.',
+    coreCompetencies: [
+      'Weekly field scouting and life-cycle observation',
+      'Botanical insecticide brewing (neem leaf, chili pepper, wild garlic)',
+      'Ecological compensation thresholds before any intervention',
+      'Safe pesticide storage and disposal protocols',
+    ],
+    fieldExperimentType: 'Cage predator-prey dynamics: Beneficial dragonflies & spiders vs. African rice gall midge',
+  },
+  {
+    id: 'mod_postharvest',
+    moduleCode: 'FFS-PHL-05',
+    title: 'Post-Harvest Parboiling, Solar Drying & Hermetic Storage',
+    category: 'Harvest & Quality',
+    targetCommodity: 'Rice & Cocoa',
+    durationWeeks: 8,
+    practicalFieldHours: 24,
+    description: 'Improved steaming and uniform parboiling vessels, elevated solar drying trays avoiding direct soil contamination, moisture meters (<14% for rice, <7.5% for cocoa), and hermetic Purdue Improved Crop Storage (PICS) bags.',
+    coreCompetencies: [
+      'Uniform soaking and steaming for crack-free rice milling',
+      'Fermentation box turning regimes for premium Grade-A cocoa beans',
+      'Digital moisture reading & calibration',
+      'Weevil and mold prevention using oxygen-depleting hermetic liners',
+    ],
+    fieldExperimentType: 'Moisture tracking: Tarpaulin ground drying vs. Raised mesh solar table drying',
+  },
+  {
+    id: 'mod_farm_business',
+    moduleCode: 'FFS-FBS-06',
+    title: 'Farm Business School (FBS), Gross Margin & Record Keeping',
+    category: 'Agribusiness & Governance',
+    targetCommodity: 'All Value Chains',
+    durationWeeks: 10,
+    practicalFieldHours: 30,
+    description: 'Transitioning from subsistence farming to commercial enterprise. Learners maintain cash flow books, labor cost logs, market price negotiation ledgers, and collective input aggregation plans.',
+    coreCompetencies: [
+      'Unit cost of production calculation per hectare and per bag',
+      'Cash flow forecasting for seasonal hungry-season bridging',
+      'Collective bargaining through Agricultural Business Centers (ABCs)',
+      'Bankability standards for rural microfinance and matching grant applications',
+    ],
+    fieldExperimentType: 'Farm budget scenario game: Solo farmgate selling vs. Aggregated bulk warehouse marketing',
+  },
+];
+
+export const FFS_DISTRICT_SUMMARIES: FFSDistrictSummary[] = [
+  {
+    district: 'Kenema',
+    region: 'Eastern',
+    ffsGroupsCount: 175,
+    totalFarmersTrained: 5250,
+    womenPercentage: 59.2,
+    youthPercentage: 34.0,
+    demoHectares: 262.5,
+    leadCommodities: ['Cocoa', 'Oil Palm', 'IVS Rice'],
+    adoptionRatePct: 84.5,
+    avgYieldIncreasePct: 62.0,
+  },
+  {
+    district: 'Kailahun',
+    region: 'Eastern',
+    ffsGroupsCount: 180,
+    totalFarmersTrained: 5400,
+    womenPercentage: 60.5,
+    youthPercentage: 35.2,
+    demoHectares: 270.0,
+    leadCommodities: ['Cocoa', 'Coffee', 'Rice (IVS)'],
+    adoptionRatePct: 86.0,
+    avgYieldIncreasePct: 64.5,
+  },
+  {
+    district: 'Kono',
+    region: 'Eastern',
+    ffsGroupsCount: 140,
+    totalFarmersTrained: 4200,
+    womenPercentage: 57.8,
+    youthPercentage: 32.5,
+    demoHectares: 210.0,
+    leadCommodities: ['IVS Rice', 'Cocoa', 'Vegetables'],
+    adoptionRatePct: 82.0,
+    avgYieldIncreasePct: 59.0,
+  },
+  {
+    district: 'Bo',
+    region: 'Southern',
+    ffsGroupsCount: 165,
+    totalFarmersTrained: 4950,
+    womenPercentage: 58.0,
+    youthPercentage: 33.8,
+    demoHectares: 247.5,
+    leadCommodities: ['IVS Rice', 'Oil Palm', 'Cassava'],
+    adoptionRatePct: 83.2,
+    avgYieldIncreasePct: 60.5,
+  },
+  {
+    district: 'Pujehun',
+    region: 'Southern',
+    ffsGroupsCount: 135,
+    totalFarmersTrained: 4050,
+    womenPercentage: 61.2,
+    youthPercentage: 34.6,
+    demoHectares: 202.5,
+    leadCommodities: ['Oil Palm', 'IVS Rice', 'Cocoa'],
+    adoptionRatePct: 81.8,
+    avgYieldIncreasePct: 58.0,
+  },
+  {
+    district: 'Moyamba',
+    region: 'Southern',
+    ffsGroupsCount: 130,
+    totalFarmersTrained: 3900,
+    womenPercentage: 56.5,
+    youthPercentage: 31.0,
+    demoHectares: 195.0,
+    leadCommodities: ['IVS Rice', 'Cassava', 'Oil Palm'],
+    adoptionRatePct: 79.5,
+    avgYieldIncreasePct: 55.0,
+  },
+  {
+    district: 'Bonthe',
+    region: 'Southern',
+    ffsGroupsCount: 85,
+    totalFarmersTrained: 2550,
+    womenPercentage: 62.0,
+    youthPercentage: 32.0,
+    demoHectares: 127.5,
+    leadCommodities: ['Tidal Rice', 'Oil Palm', 'Vegetables'],
+    adoptionRatePct: 78.0,
+    avgYieldIncreasePct: 53.5,
+  },
+  {
+    district: 'Port Loko',
+    region: 'North Western',
+    ffsGroupsCount: 110,
+    totalFarmersTrained: 3300,
+    womenPercentage: 57.0,
+    youthPercentage: 33.0,
+    demoHectares: 165.0,
+    leadCommodities: ['IVS Rice', 'Cassava', 'Vegetables'],
+    adoptionRatePct: 80.0,
+    avgYieldIncreasePct: 56.2,
+  },
+  {
+    district: 'Kambia',
+    region: 'North Western',
+    ffsGroupsCount: 95,
+    totalFarmersTrained: 2850,
+    womenPercentage: 55.4,
+    youthPercentage: 32.8,
+    demoHectares: 142.5,
+    leadCommodities: ['Mangrove/IVS Rice', 'Groundnuts'],
+    adoptionRatePct: 79.0,
+    avgYieldIncreasePct: 54.0,
+  },
+  {
+    district: 'Tonkolili',
+    region: 'Northern',
+    ffsGroupsCount: 105,
+    totalFarmersTrained: 3150,
+    womenPercentage: 58.6,
+    youthPercentage: 33.4,
+    demoHectares: 157.5,
+    leadCommodities: ['IVS Rice', 'Oil Palm', 'Vegetables'],
+    adoptionRatePct: 81.2,
+    avgYieldIncreasePct: 57.5,
+  },
+  {
+    district: 'Bombali',
+    region: 'Northern',
+    ffsGroupsCount: 70,
+    totalFarmersTrained: 2100,
+    womenPercentage: 56.0,
+    youthPercentage: 31.5,
+    demoHectares: 105.0,
+    leadCommodities: ['IVS Rice', 'Cassava', 'Legumes'],
+    adoptionRatePct: 77.5,
+    avgYieldIncreasePct: 52.0,
+  },
+  {
+    district: 'Koinadugu',
+    region: 'Northern',
+    ffsGroupsCount: 40,
+    totalFarmersTrained: 1200,
+    womenPercentage: 59.5,
+    youthPercentage: 30.2,
+    demoHectares: 60.0,
+    leadCommodities: ['Upland/IVS Rice', 'Highland Vegetables'],
+    adoptionRatePct: 76.0,
+    avgYieldIncreasePct: 50.5,
+  },
+  {
+    district: 'Falaba',
+    region: 'Northern',
+    ffsGroupsCount: 20,
+    totalFarmersTrained: 600,
+    womenPercentage: 54.0,
+    youthPercentage: 29.0,
+    demoHectares: 30.0,
+    leadCommodities: ['IVS Rice', 'Maize'],
+    adoptionRatePct: 74.0,
+    avgYieldIncreasePct: 48.0,
+  },
+];
+
+export const REPRESENTATIVE_FFS_GROUPS: FFSGroup[] = [
+  {
+    id: 'ffs_ken_01',
+    name: 'Golu Cocoa Renewal Farmer Field School',
+    district: 'Kenema',
+    chiefdom: 'Nongowa',
+    community: 'Golu',
+    valueChain: 'Cocoa',
+    facilitatorName: 'Fatmata B. Koroma',
+    facilitatorType: 'MAFS Extension Agent',
+    cycleCohort: 'Cohort 3 (2023-2025)',
+    totalEnrolled: 30,
+    womenLearners: 19,
+    youthLearners: 11,
+    graduatedCount: 29,
+    status: 'Graduated',
+    demoPlotAreaHa: 1.5,
+    demoPracticeFocus: 'Top-working hybrid clonal scions, sanitary pruning, shade management with fruit trees',
+    baselineYieldMTPerHa: 0.38,
+    achievedYieldMTPerHa: 0.72,
+    yieldGainPct: 89.5,
+    coordinates: [7.8833, -11.1833],
+  },
+  {
+    id: 'ffs_kai_02',
+    name: 'Koindu Border Sunrise IVS Rice FFS',
+    district: 'Kailahun',
+    chiefdom: 'Kissi Teng',
+    community: 'Koindu',
+    valueChain: 'Rice (IVS)',
+    facilitatorName: 'Amara S. Conteh',
+    facilitatorType: 'Community Master Trainer',
+    cycleCohort: 'Cohort 4 (2025-2027)',
+    totalEnrolled: 32,
+    womenLearners: 20,
+    youthLearners: 12,
+    graduatedCount: 0,
+    status: 'Active In-Session',
+    demoPlotAreaHa: 2.0,
+    demoPracticeFocus: 'SRI 25x25cm spacing, single 10-day seedling, central bund water intake gates, compost layering',
+    baselineYieldMTPerHa: 1.50,
+    achievedYieldMTPerHa: 2.85,
+    yieldGainPct: 90.0,
+    coordinates: [8.2789, -10.3542],
+  },
+  {
+    id: 'ffs_bon_03',
+    name: 'Bumpeh River Palm Growers FFS',
+    district: 'Bo',
+    chiefdom: 'Bumpeh',
+    community: 'Tikonko Junction',
+    valueChain: 'Oil Palm',
+    facilitatorName: 'Mustapha V. Kamara',
+    facilitatorType: 'FBO Lead Farmer',
+    cycleCohort: 'Cohort 2 (2021-2023)',
+    totalEnrolled: 30,
+    womenLearners: 17,
+    youthLearners: 10,
+    graduatedCount: 30,
+    status: 'Post-Graduation Mentoring',
+    demoPlotAreaHa: 2.5,
+    demoPracticeFocus: 'Tenera NIFOR certified nursery maintenance, triangle spacing, ring-weeding, EFB mulch',
+    baselineYieldMTPerHa: 4.80,
+    achievedYieldMTPerHa: 8.60,
+    yieldGainPct: 79.2,
+    coordinates: [7.9644, -11.7383],
+  },
+  {
+    id: 'ffs_kon_04',
+    name: 'Sewa Valley Agro-Ecological Rice FFS',
+    district: 'Kono',
+    chiefdom: 'Nimikoro',
+    community: 'Jaiama Nimikoro',
+    valueChain: 'Rice (IVS)',
+    facilitatorName: 'Hawa S. Mansaray',
+    facilitatorType: 'MAFS Extension Agent',
+    cycleCohort: 'Cohort 3 (2023-2025)',
+    totalEnrolled: 28,
+    womenLearners: 18,
+    youthLearners: 9,
+    graduatedCount: 28,
+    status: 'Graduated',
+    demoPlotAreaHa: 1.8,
+    demoPracticeFocus: 'Mechanical rotary weeder aeration, organic Azolla green manure, moisture conservation',
+    baselineYieldMTPerHa: 1.45,
+    achievedYieldMTPerHa: 2.65,
+    yieldGainPct: 82.8,
+    coordinates: [8.6500, -10.9833],
+  },
+  {
+    id: 'ffs_puj_05',
+    name: 'Waanje Palm & Vegetable FFS',
+    district: 'Pujehun',
+    chiefdom: 'Panga Krim',
+    community: 'Gobaru',
+    valueChain: 'Oil Palm',
+    facilitatorName: 'Sahr E. Foday',
+    facilitatorType: 'Community Master Trainer',
+    cycleCohort: 'Cohort 4 (2025-2027)',
+    totalEnrolled: 30,
+    womenLearners: 21,
+    youthLearners: 11,
+    graduatedCount: 0,
+    status: 'Active In-Session',
+    demoPlotAreaHa: 2.0,
+    demoPracticeFocus: 'Assisted pollination, harvesting at 3-loose-fruits, Pueraria leguminous cover',
+    baselineYieldMTPerHa: 5.10,
+    achievedYieldMTPerHa: 8.90,
+    yieldGainPct: 74.5,
+    coordinates: [7.3506, -11.7208],
+  },
+  {
+    id: 'ffs_pl_06',
+    name: 'Mange Burea Tidal & Swamp Rice FFS',
+    district: 'Port Loko',
+    chiefdom: 'Bureh Kasseh Makama',
+    community: 'Mange',
+    valueChain: 'Rice (IVS)',
+    facilitatorName: 'Ibrahim K. Sesay',
+    facilitatorType: 'MAFS Extension Agent',
+    cycleCohort: 'Cohort 3 (2023-2025)',
+    totalEnrolled: 30,
+    womenLearners: 16,
+    youthLearners: 10,
+    graduatedCount: 29,
+    status: 'Graduated',
+    demoPlotAreaHa: 1.5,
+    demoPracticeFocus: 'Salt-tolerant and sub-emergence rice cultivars, saline gate control, micro-dosing fertilizer',
+    baselineYieldMTPerHa: 1.60,
+    achievedYieldMTPerHa: 2.70,
+    yieldGainPct: 68.8,
+    coordinates: [8.9167, -12.9167],
+  },
+  {
+    id: 'ffs_moy_07',
+    name: 'Sembehun Cassava & Swamp Rice FFS',
+    district: 'Moyamba',
+    chiefdom: 'Kagboro',
+    community: 'Sembehun',
+    valueChain: 'Cassava & Legumes',
+    facilitatorName: 'Mariama T. Bangura',
+    facilitatorType: 'FBO Lead Farmer',
+    cycleCohort: 'Cohort 2 (2021-2023)',
+    totalEnrolled: 30,
+    womenLearners: 22,
+    youthLearners: 9,
+    graduatedCount: 30,
+    status: 'Post-Graduation Mentoring',
+    demoPlotAreaHa: 2.0,
+    demoPracticeFocus: 'SLICASS mosaic-resistant stems, ridge planting, cowpea intercropping, solar grating demo',
+    baselineYieldMTPerHa: 9.50,
+    achievedYieldMTPerHa: 16.80,
+    yieldGainPct: 76.8,
+    coordinates: [7.9833, -12.4333],
+  },
+];

@@ -1,0 +1,6 @@
+{
+  "name": "Sierra Leone AVDP Infographic & Value Chain Platform",
+  "description": "Interactive data visualization, maps, charts, and analytics platform for the Sierra Leone Agriculture Value Chain Development Project (AVDP) supported by IFAD, OFID, and MAFS, featuring Farmer Field Schools, Financial Management, Procurement, and Yield Analytics.",
+  "requestFramePermissions": ["camera", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

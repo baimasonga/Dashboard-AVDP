@@ -1,0 +1,773 @@
+import { WidgetConfig, CanvasState, ValueChainType } from '../types';
+import { VALUE_CHAIN_FLOWS } from './sierraLeoneData';
+
+export type InfographicTheme = 'emerald' | 'amber' | 'cyan' | 'indigo' | 'rose' | 'slate';
+
+export type AgriIconPlaceholder =
+  | 'rice'
+  | 'cassava'
+  | 'cocoa'
+  | 'oil_palm'
+  | 'vegetables'
+  | 'tractor'
+  | 'warehouse'
+  | 'solar_irrigation'
+  | 'quality_badge'
+  | 'fish'
+  | 'poultry';
+
+export interface InfographicTemplate {
+  id: string;
+  category: 'production' | 'market' | 'supply_chain' | 'me_impact' | 'value_chains';
+  title: string;
+  subtitle: string;
+  description: string;
+  thumbnailIcon: AgriIconPlaceholder;
+  recommendedValueChain: ValueChainType;
+  defaultTheme: InfographicTheme;
+  recommendedDatasetId: string;
+  tags: string[];
+  keyHighlights: string[];
+  defaultIconPlaceholder: AgriIconPlaceholder;
+  defaultMapMetric: 'yield' | 'beneficiaries' | 'processing' | 'target_pct' | 'oil_palm' | 'cocoa' | 'vegetables' | 'ivs_ha';
+  widgets: WidgetConfig[];
+}
+
+export const INFOGRAPHIC_TEMPLATES: InfographicTemplate[] = [
+  // -------------------------------------------------------------
+  // TEMPLATE 1: Crop Production & Yield Dynamics
+  // -------------------------------------------------------------
+  {
+    id: 'tpl_crop_production',
+    category: 'production',
+    title: 'Crop Production & Agro-Ecological Yield Dynamics',
+    subtitle: 'Smallholder field productivity benchmarks across IVS Swamps, Bolilands, and Uplands',
+    description:
+      'Engineered for agronomists and field program managers. Highlights yield comparisons against national benchmarks (4.2 MT/Ha for rice), seed variety adoption, and district yield densities.',
+    thumbnailIcon: 'rice',
+    recommendedValueChain: 'Rice (IVS & Bolilands)',
+    defaultTheme: 'emerald',
+    recommendedDatasetId: 'ds_district_matrix',
+    tags: ['Yields', 'Agronomy', 'IVS Swamps', 'Fertilizer E-Voucher', 'Seed Varieties'],
+    keyHighlights: [
+      'Comparative productivity tracking for Rice, Cassava, and Tree Crops',
+      '16-District geospatial yield density choropleth map',
+      'Seasonal yield trajectory with certified inputs adoption',
+    ],
+    defaultIconPlaceholder: 'rice',
+    defaultMapMetric: 'yield',
+    widgets: [
+      {
+        id: 'cp-kpi-1',
+        type: 'kpi_metric',
+        title: 'Average IVS Rice Yield',
+        subtitle: 'Target: 4.2 MT/Ha',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'RiceYield_MT_Ha',
+        aggregation: 'avg',
+        colorScheme: 'emerald',
+        colSpan: 3,
+        metricSuffix: ' MT/Ha',
+        targetValue: 4.2,
+      },
+      {
+        id: 'cp-kpi-2',
+        type: 'kpi_metric',
+        title: 'Cassava Tuber Productivity',
+        subtitle: 'Target: 25.0 MT/Ha',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'CassavaYield_MT_Ha',
+        aggregation: 'avg',
+        colorScheme: 'amber',
+        colSpan: 3,
+        metricSuffix: ' MT/Ha',
+        targetValue: 25.0,
+      },
+      {
+        id: 'cp-kpi-3',
+        type: 'kpi_metric',
+        title: 'Total Cocoa Export Volume',
+        subtitle: 'Grade 1 Certified',
+        datasetId: 'ds_cocoa_export',
+        xAxis: 'District',
+        yAxis: 'ExportGrade1_MT',
+        aggregation: 'sum',
+        colorScheme: 'cyan',
+        colSpan: 3,
+        metricSuffix: ' MT',
+        targetValue: 35000,
+      },
+      {
+        id: 'cp-kpi-4',
+        type: 'kpi_metric',
+        title: 'Input Adoption Coverage',
+        subtitle: 'Subsidized Seed & NPK',
+        datasetId: 'ds_rice_seasonal',
+        xAxis: 'Quarter',
+        yAxis: 'FertilizerAdoption_Pct',
+        aggregation: 'avg',
+        colorScheme: 'indigo',
+        colSpan: 3,
+        metricSuffix: '%',
+        targetValue: 90,
+      },
+      {
+        id: 'cp-map-1',
+        type: 'map',
+        title: 'District Agricultural Yield & Harvest Intensity',
+        subtitle: 'Geospatial distribution across all 16 districts of Sierra Leone',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'RiceYield_MT_Ha',
+        aggregation: 'sum',
+        colorScheme: 'emerald',
+        colSpan: 7,
+        mapMetric: 'yield',
+      },
+      {
+        id: 'cp-bar-1',
+        type: 'bar',
+        title: 'District Rice Productivity League (MT/Ha)',
+        subtitle: 'Ranked performance across key agricultural districts',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'RiceYield_MT_Ha',
+        aggregation: 'sum',
+        colorScheme: 'emerald',
+        colSpan: 5,
+        sortOrder: 'desc',
+        limit: 8,
+      },
+      {
+        id: 'cp-line-1',
+        type: 'line',
+        title: 'Seasonal Yield Trajectory vs Baseline Target',
+        subtitle: 'Impact of climate-smart drainage and high-yield seed introduction',
+        datasetId: 'ds_rice_seasonal',
+        xAxis: 'Quarter',
+        yAxis: 'AverageYield_MT_Ha',
+        aggregation: 'avg',
+        colorScheme: 'emerald',
+        colSpan: 7,
+      },
+      {
+        id: 'cp-donut-1',
+        type: 'donut',
+        title: 'Cassava Flour Processing Output by Hub',
+        subtitle: 'High-Quality Cassava Flour (HQCF) commercial allocation',
+        datasetId: 'ds_cassava_mills',
+        xAxis: 'HubName',
+        yAxis: 'HQCF_Output_MT',
+        aggregation: 'sum',
+        colorScheme: 'amber',
+        colSpan: 5,
+      },
+      {
+        id: 'cp-notes-1',
+        type: 'notes',
+        title: 'Agronomic Field Notes & Input Verification',
+        subtitle: 'Sierra Leone Ministry of Agriculture Extension Audit',
+        colSpan: 12,
+        customNotes:
+          'Field verification in Bo, Kenema, and Port Loko confirmed a 38% yield increase when IVS bunding is combined with certified ROK-3 and NERICA seeds. Water control structures mitigated mid-season dry spells.',
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------
+  // TEMPLATE 2: Market Analysis & Commodity Prices
+  // -------------------------------------------------------------
+  {
+    id: 'tpl_market_analysis',
+    category: 'market',
+    title: 'Market Analysis & Commodity Price Margins',
+    subtitle: 'Farmgate vs Wholesale vs Retail Freetown market price dynamics and trade margins',
+    description:
+      'Formulated for agribusiness traders, cooperative leaders, and commercial off-takers. Analyzes price spread across value chains, trade margins, farmer value share, and export premiums.',
+    thumbnailIcon: 'quality_badge',
+    recommendedValueChain: 'Cocoa & Coffee',
+    defaultTheme: 'amber',
+    recommendedDatasetId: 'ds_cocoa_export',
+    tags: ['Prices', 'Farmgate', 'Fairtrade Premium', 'Trade Margins', 'Export Values'],
+    keyHighlights: [
+      'Export revenue and Fairtrade organic price premium comparisons',
+      'Value addition and mill processing revenue distribution',
+      'Farmer revenue capture across regional border markets',
+    ],
+    defaultIconPlaceholder: 'quality_badge',
+    defaultMapMetric: 'processing',
+    widgets: [
+      {
+        id: 'mkt-kpi-1',
+        type: 'kpi_metric',
+        title: 'Cocoa Export Value Realized',
+        subtitle: 'Target: $40M USD',
+        datasetId: 'ds_cocoa_export',
+        xAxis: 'District',
+        yAxis: 'TotalRevenue_USD_M',
+        aggregation: 'sum',
+        colorScheme: 'amber',
+        colSpan: 3,
+        metricPrefix: '$',
+        metricSuffix: 'M USD',
+        targetValue: 40,
+      },
+      {
+        id: 'mkt-kpi-2',
+        type: 'kpi_metric',
+        title: 'Fairtrade Organic Premium',
+        subtitle: 'Returned to Cooperatives',
+        datasetId: 'ds_cocoa_export',
+        xAxis: 'District',
+        yAxis: 'FairtradePremium_USD_k',
+        aggregation: 'sum',
+        colorScheme: 'emerald',
+        colSpan: 3,
+        metricPrefix: '$',
+        metricSuffix: 'k USD',
+        targetValue: 1200,
+      },
+      {
+        id: 'mkt-kpi-3',
+        type: 'kpi_metric',
+        title: 'Cassava Hub Revenue Generated',
+        subtitle: 'Domestic Commercial Flour',
+        datasetId: 'ds_cassava_mills',
+        xAxis: 'HubName',
+        yAxis: 'Revenue_Million_SLE',
+        aggregation: 'sum',
+        colorScheme: 'cyan',
+        colSpan: 3,
+        metricSuffix: 'M SLE',
+        targetValue: 120,
+      },
+      {
+        id: 'mkt-kpi-4',
+        type: 'kpi_metric',
+        title: 'Contracted Outgrower Farmers',
+        subtitle: 'Formal Buyback Agreements',
+        datasetId: 'ds_cassava_mills',
+        xAxis: 'HubName',
+        yAxis: 'ContractedFarmers',
+        aggregation: 'sum',
+        colorScheme: 'indigo',
+        colSpan: 3,
+        metricSuffix: ' Farmers',
+        targetValue: 15000,
+      },
+      {
+        id: 'mkt-bar-1',
+        type: 'bar',
+        title: 'Export Grade 1 Cocoa by Eastern Producing Districts (MT)',
+        subtitle: 'Comparison of certified organic volume against standard quality',
+        datasetId: 'ds_cocoa_export',
+        xAxis: 'District',
+        yAxis: 'ExportGrade1_MT',
+        aggregation: 'sum',
+        colorScheme: 'amber',
+        colSpan: 6,
+        sortOrder: 'desc',
+      },
+      {
+        id: 'mkt-donut-1',
+        type: 'donut',
+        title: 'Regional Fairtrade Premium Share by District',
+        subtitle: 'Direct financial transfers to smallholder farmer unions',
+        datasetId: 'ds_cocoa_export',
+        xAxis: 'District',
+        yAxis: 'FairtradePremium_USD_k',
+        aggregation: 'sum',
+        colorScheme: 'emerald',
+        colSpan: 6,
+      },
+      {
+        id: 'mkt-map-1',
+        type: 'map',
+        title: 'Commercial Hubs & Market Infrastructure Map',
+        subtitle: 'Density of processing centers and grain storage nodes in Sierra Leone',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'ProcessingMills',
+        aggregation: 'sum',
+        colorScheme: 'amber',
+        colSpan: 7,
+        mapMetric: 'processing',
+      },
+      {
+        id: 'mkt-hbar-1',
+        type: 'horizontal_bar',
+        title: 'Commercial Revenue by Processing Facility (Million SLE)',
+        subtitle: 'HQCF flour and high-grade Gari sales to Freetown bakeries',
+        datasetId: 'ds_cassava_mills',
+        xAxis: 'HubName',
+        yAxis: 'Revenue_Million_SLE',
+        aggregation: 'sum',
+        colorScheme: 'cyan',
+        colSpan: 5,
+        sortOrder: 'desc',
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------
+  // TEMPLATE 3: Supply Chain Efficiency & Agro-Logistics
+  // -------------------------------------------------------------
+  {
+    id: 'tpl_supply_chain',
+    category: 'supply_chain',
+    title: 'Supply Chain Efficiency & Post-Harvest Loss Mitigation',
+    subtitle: 'End-to-end transformation from swamp harvest to commercial agro-processing and silos',
+    description:
+      'Configured for supply chain coordinators and logistics managers. Tracks post-harvest losses along each corridor, processing mill throughput, feeder road access, and warehouse capacity utilization.',
+    thumbnailIcon: 'warehouse',
+    recommendedValueChain: 'Rice (IVS & Bolilands)',
+    defaultTheme: 'cyan',
+    recommendedDatasetId: 'ds_district_matrix',
+    tags: ['Supply Chain', 'Losses', 'Processing Mills', 'Feeder Roads', 'Logistics'],
+    keyHighlights: [
+      'Interactive 6-stage value chain pathway with stage-by-stage efficiency',
+      'Rehabilitated feeder road connectivity linking farmgate to aggregation hubs',
+      'Agro-processing mill capacity utilization and throughput',
+    ],
+    defaultIconPlaceholder: 'warehouse',
+    defaultMapMetric: 'processing',
+    widgets: [
+      {
+        id: 'sc-kpi-1',
+        type: 'kpi_metric',
+        title: 'Active Processing Hubs',
+        subtitle: 'Certified Rice & Cassava Mills',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'ProcessingMills',
+        aggregation: 'sum',
+        colorScheme: 'cyan',
+        colSpan: 3,
+        metricSuffix: ' Mills',
+        targetValue: 180,
+      },
+      {
+        id: 'sc-kpi-2',
+        type: 'kpi_metric',
+        title: 'Post-Harvest Loss Rate',
+        subtitle: 'Target: Reduced to < 10%',
+        datasetId: 'ds_rice_seasonal',
+        xAxis: 'Quarter',
+        yAxis: 'PostHarvestLoss_Pct',
+        aggregation: 'avg',
+        colorScheme: 'emerald',
+        colSpan: 3,
+        metricSuffix: '%',
+        targetValue: 10,
+      },
+      {
+        id: 'sc-kpi-3',
+        type: 'kpi_metric',
+        title: 'Feeder Roads Upgraded',
+        subtitle: 'All-Weather Farm Access',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'FeederRoads_Km',
+        aggregation: 'sum',
+        colorScheme: 'amber',
+        colSpan: 3,
+        metricSuffix: ' Km',
+        targetValue: 1500,
+      },
+      {
+        id: 'sc-kpi-4',
+        type: 'kpi_metric',
+        title: 'Mill Capacity Utilization',
+        subtitle: 'Average Operating Rate',
+        datasetId: 'ds_cassava_mills',
+        xAxis: 'HubName',
+        yAxis: 'CapacityUtilization_Pct',
+        aggregation: 'avg',
+        colorScheme: 'indigo',
+        colSpan: 3,
+        metricSuffix: '%',
+        targetValue: 90,
+      },
+      {
+        id: 'sc-flow-1',
+        type: 'flow_diagram',
+        title: 'End-to-End Sierra Leone Rice Value Chain Pipeline',
+        subtitle: 'Stage-by-stage efficiency and critical loss checkpoints along the corridor',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'Beneficiaries',
+        aggregation: 'sum',
+        colorScheme: 'cyan',
+        colSpan: 12,
+        valueChain: 'Rice (IVS & Bolilands)',
+        flowSteps: VALUE_CHAIN_FLOWS['Rice (IVS & Bolilands)'],
+      },
+      {
+        id: 'sc-map-1',
+        type: 'map',
+        title: 'Agro-Processing & Feeder Road Access by District',
+        subtitle: 'Geographic concentration of certified processing facilities',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'ProcessingMills',
+        aggregation: 'sum',
+        colorScheme: 'cyan',
+        colSpan: 7,
+        mapMetric: 'processing',
+      },
+      {
+        id: 'sc-hbar-1',
+        type: 'horizontal_bar',
+        title: 'Feeder Road Rehabilitation by District (Km)',
+        subtitle: 'Corridors connecting isolated smallholders to trunk highways',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'FeederRoads_Km',
+        aggregation: 'sum',
+        colorScheme: 'emerald',
+        colSpan: 5,
+        sortOrder: 'desc',
+      },
+      {
+        id: 'sc-line-1',
+        type: 'line',
+        title: 'Post-Harvest Loss Reduction Trend (%)',
+        subtitle: 'Progressive decline achieved through tarpaulin threshing and hermetic grain bags',
+        datasetId: 'ds_rice_seasonal',
+        xAxis: 'Quarter',
+        yAxis: 'PostHarvestLoss_Pct',
+        aggregation: 'avg',
+        colorScheme: 'emerald',
+        colSpan: 12,
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------
+  // TEMPLATE 4: Monitoring & Evaluation (M&E) & Beneficiary Impact
+  // -------------------------------------------------------------
+  {
+    id: 'tpl_me_impact',
+    category: 'me_impact',
+    title: 'M&E Results Framework & Smallholder Impact Scorecard',
+    subtitle: 'Strategic logframe milestone tracking with gender, youth, and AfDB/MAFS compliance',
+    description:
+      'Created for M&E directors, donors, and steering committee meetings. Visualizes headline indicators, gender disaggregation (women 54.2%), youth inclusion, and district-by-district project completion.',
+    thumbnailIcon: 'quality_badge',
+    recommendedValueChain: 'All Value Chains',
+    defaultTheme: 'emerald',
+    recommendedDatasetId: 'ds_district_matrix',
+    tags: ['Logframe', 'M&E', 'Beneficiaries', 'Gender Inclusion', 'Youth Empowerment'],
+    keyHighlights: [
+      'Full project logframe tracking against midterm and final targets',
+      'Gender and youth smallholder beneficiary disaggregation',
+      'Choropleth district delivery rate scorecard',
+    ],
+    defaultIconPlaceholder: 'quality_badge',
+    defaultMapMetric: 'target_pct',
+    widgets: [
+      {
+        id: 'me-kpi-1',
+        type: 'kpi_metric',
+        title: 'Total Beneficiary Smallholders',
+        subtitle: 'Target: 220,000 Households',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'Beneficiaries',
+        aggregation: 'sum',
+        colorScheme: 'emerald',
+        colSpan: 3,
+        metricSuffix: ' Farmers',
+        targetValue: 220000,
+      },
+      {
+        id: 'me-kpi-2',
+        type: 'kpi_metric',
+        title: 'Overall Logframe Completion',
+        subtitle: 'Target: 90% Delivery',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'ME_Completion_Pct',
+        aggregation: 'avg',
+        colorScheme: 'indigo',
+        colSpan: 3,
+        metricSuffix: '%',
+        targetValue: 90,
+      },
+      {
+        id: 'me-kpi-3',
+        type: 'kpi_metric',
+        title: 'Supported Farmer Based Orgs (FBOs)',
+        subtitle: 'Target: 1,400 FBOs',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'FBO_Count',
+        aggregation: 'sum',
+        colorScheme: 'amber',
+        colSpan: 3,
+        metricSuffix: ' FBOs',
+        targetValue: 1400,
+      },
+      {
+        id: 'me-kpi-4',
+        type: 'kpi_metric',
+        title: 'Average IVS Yield Across Project',
+        subtitle: 'Baseline: 1.8 MT/Ha',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'RiceYield_MT_Ha',
+        aggregation: 'avg',
+        colorScheme: 'cyan',
+        colSpan: 3,
+        metricSuffix: ' MT/Ha',
+        targetValue: 4.2,
+      },
+      {
+        id: 'me-prog-1',
+        type: 'target_progress',
+        title: 'AVDP Overall Project Target Progress',
+        subtitle: 'Combined delivery score across all 8 strategic logframe pillars',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'ME_Completion_Pct',
+        aggregation: 'avg',
+        colorScheme: 'emerald',
+        colSpan: 12,
+        targetValue: 100,
+      },
+      {
+        id: 'me-map-1',
+        type: 'map',
+        title: 'M&E Project Implementation Delivery Scorecard',
+        subtitle: 'District-level audit of completed activities and verified milestones',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'ME_Completion_Pct',
+        aggregation: 'sum',
+        colorScheme: 'indigo',
+        colSpan: 7,
+        mapMetric: 'target_pct',
+      },
+      {
+        id: 'me-bar-1',
+        type: 'bar',
+        title: 'Beneficiary Smallholders Reached by District',
+        subtitle: 'Households receiving inputs, training, and matching grants',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'Beneficiaries',
+        aggregation: 'sum',
+        colorScheme: 'emerald',
+        colSpan: 5,
+        sortOrder: 'desc',
+        limit: 8,
+      },
+      {
+        id: 'me-donut-1',
+        type: 'donut',
+        title: 'Farmer Based Organizations (FBO) Density',
+        subtitle: 'Cooperative mobilization across project districts',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'FBO_Count',
+        aggregation: 'sum',
+        colorScheme: 'amber',
+        colSpan: 6,
+      },
+      {
+        id: 'me-hbar-1',
+        type: 'horizontal_bar',
+        title: 'District M&E Completion Ranking (%)',
+        subtitle: 'Audit compliance index verified by independent monitoring unit',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'ME_Completion_Pct',
+        aggregation: 'sum',
+        colorScheme: 'indigo',
+        colSpan: 6,
+        sortOrder: 'desc',
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------
+  // TEMPLATE 5: AVDP 4-Pillar Value Chain Portfolio
+  // -------------------------------------------------------------
+  {
+    id: 'tpl_avdp_value_chains',
+    category: 'value_chains',
+    title: 'AVDP 4-Pillar Strategic Value Chains: Rice, Oil Palm, Cocoa & Vegetables',
+    subtitle: 'Comprehensive cross-value-chain scorecard covering IVS Swamps, Tree Crop Rehabilitation & Horticulture',
+    description:
+      'Dedicated executive dashboard for the AVDP portfolio across Sierra Leone. Tracks certified seed adoption for IVS rice, Tenera oil palm nurseries, Grade 1 organic cocoa exports, and women/youth solar vegetable gardens.',
+    thumbnailIcon: 'vegetables',
+    recommendedValueChain: 'All Value Chains',
+    defaultTheme: 'emerald',
+    recommendedDatasetId: 'ds_district_matrix',
+    tags: ['Rice IVS', 'Oil Palm', 'Cocoa', 'Vegetables', 'AVDP Target 2025'],
+    keyHighlights: [
+      'Comparative tracking of all 4 AVDP focus value chains',
+      'Geospatial layer for IVS Swamps, Oil Palm, Cocoa, and Horticulture',
+      'Gender and youth inclusion targets across value chain interventions',
+    ],
+    defaultIconPlaceholder: 'vegetables',
+    defaultMapMetric: 'yield',
+    widgets: [
+      {
+        id: 'vc-kpi-1',
+        type: 'kpi_metric',
+        title: 'AVDP Target Beneficiaries',
+        subtitle: 'Target: 140,000 HH by 2025',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'Beneficiaries',
+        aggregation: 'sum',
+        colorScheme: 'emerald',
+        colSpan: 3,
+        metricSuffix: ' HH',
+        targetValue: 140000,
+      },
+      {
+        id: 'vc-kpi-2',
+        type: 'kpi_metric',
+        title: 'IVS Swamp Rice Developed',
+        subtitle: 'Target: 4,000 Ha Rehabilitated',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'RiceYield_MT_Ha',
+        aggregation: 'avg',
+        colorScheme: 'emerald',
+        colSpan: 3,
+        metricSuffix: ' MT/Ha',
+        targetValue: 4.5,
+      },
+      {
+        id: 'vc-kpi-3',
+        type: 'kpi_metric',
+        title: 'Cocoa & Oil Palm Output',
+        subtitle: 'Export Grade 1 & CPO',
+        datasetId: 'ds_cocoa_export',
+        xAxis: 'District',
+        yAxis: 'ExportGrade1_MT',
+        aggregation: 'sum',
+        colorScheme: 'amber',
+        colSpan: 3,
+        metricSuffix: ' MT',
+        targetValue: 35000,
+      },
+      {
+        id: 'vc-kpi-4',
+        type: 'kpi_metric',
+        title: 'Women & Youth Beneficiaries',
+        subtitle: 'Target: >50% Women, >30% Youth',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'ME_Completion_Pct',
+        aggregation: 'avg',
+        colorScheme: 'cyan',
+        colSpan: 3,
+        metricSuffix: '%',
+        targetValue: 85,
+      },
+      {
+        id: 'vc-map-1',
+        type: 'map',
+        title: 'AVDP Geospatial Value Chain Distribution Map',
+        subtitle: 'District-by-district production intensity across the 16 districts of Sierra Leone',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'RiceYield_MT_Ha',
+        aggregation: 'sum',
+        colorScheme: 'emerald',
+        colSpan: 7,
+        mapMetric: 'yield',
+      },
+      {
+        id: 'vc-bar-1',
+        type: 'bar',
+        title: 'District Agricultural Output Rankings',
+        subtitle: 'High-volume production hubs across Eastern, Northern & Southern provinces',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'RiceYield_MT_Ha',
+        aggregation: 'sum',
+        colorScheme: 'emerald',
+        colSpan: 5,
+        sortOrder: 'desc',
+        limit: 8,
+      },
+      {
+        id: 'vc-flow-1',
+        type: 'flow_diagram',
+        title: 'AVDP Value Chain Upgrading & Processing Pipeline',
+        subtitle: '6-stage integrated flow from nursery seedlings to export off-takers',
+        datasetId: 'ds_district_matrix',
+        xAxis: 'District',
+        yAxis: 'Beneficiaries',
+        aggregation: 'sum',
+        colorScheme: 'emerald',
+        colSpan: 12,
+        valueChain: 'Rice (IVS & Bolilands)',
+        flowSteps: VALUE_CHAIN_FLOWS['Rice (IVS & Bolilands)'],
+      },
+      {
+        id: 'vc-notes-1',
+        type: 'notes',
+        title: 'AVDP Strategic Value Chain Interventions Summary',
+        subtitle: 'Ministry of Agriculture & Food Security (MAFS) & AfDB / IFAD',
+        colSpan: 12,
+        customNotes:
+          'Under the AVDP mandate, 4 critical value chains drive food security and rural incomes: (1) Rice (IVS water control, certified seed ROK 4/NERICA); (2) Oil Palm (high-yielding Tenera seedlings, mini CPO processing mills); (3) Cocoa (shade rehabilitation, solar fermentation drying, organic export certifications); and (4) Horticulture/Vegetables (solar micro-irrigation, cold storage, women & youth vegetable commercial gardens).',
+      },
+    ],
+  },
+];
+
+/**
+ * Converts an InfographicTemplate into a live CanvasState
+ */
+export function buildCanvasFromTemplate(
+  template: InfographicTemplate,
+  options?: {
+    customTitle?: string;
+    customSubtitle?: string;
+    targetDatasetId?: string;
+    selectedTheme?: InfographicTheme;
+    iconPlaceholder?: AgriIconPlaceholder;
+    mapMetric?: 'yield' | 'beneficiaries' | 'processing' | 'target_pct' | 'oil_palm' | 'cocoa' | 'vegetables' | 'ivs_ha';
+  }
+): CanvasState {
+  const dsId = options?.targetDatasetId || template.recommendedDatasetId;
+  const theme = options?.selectedTheme || template.defaultTheme;
+  const mapMetric = options?.mapMetric || template.defaultMapMetric;
+
+  // Clone widgets and adapt to specified dataset, map metric, and theme
+  const widgets: WidgetConfig[] = template.widgets.map((w, idx) => {
+    const updated: WidgetConfig = {
+      ...w,
+      id: `w-${template.id.slice(4)}-${idx + 1}-${Date.now().toString(36).slice(-4)}`,
+      datasetId: dsId,
+      colorScheme: theme,
+    };
+
+    if (updated.type === 'map') {
+      updated.mapMetric = mapMetric;
+    }
+
+    return updated;
+  });
+
+  return {
+    id: `canvas_${template.id}_${Date.now()}`,
+    title: options?.customTitle || template.title,
+    subtitle: options?.customSubtitle || template.subtitle,
+    templateType: template.category as any,
+    widgets,
+    theme: `dark-${theme}`,
+    lastModified: Date.now(),
+    updatedBy: 'Local User',
+    version: 1,
+  };
+}
