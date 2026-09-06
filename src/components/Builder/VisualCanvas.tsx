@@ -24,6 +24,7 @@ interface VisualCanvasProps {
   datasets: Dataset[];
   selectedDistrict: string | null;
   dataSourceMode: DashboardDataMode;
+  readOnly: boolean;
   onSelectDistrict: (district: string | null) => void;
   onUpdateCanvas: (updated: CanvasState) => void;
   activeRemoteWidgetId?: string | null;
@@ -36,6 +37,7 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
   datasets,
   selectedDistrict,
   dataSourceMode,
+  readOnly,
   onSelectDistrict,
   onUpdateCanvas,
   activeRemoteWidgetId,
@@ -156,6 +158,8 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
 
   return (
     <div className="space-y-4">
+      {!readOnly && (
+        <>
       {/* Quick Add Widget Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-900/90 border border-slate-800 rounded-xl backdrop-blur-md">
         <div className="flex items-center gap-2">
@@ -238,19 +242,22 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
         </div>
       </div>
 
+        </>
+      )}
+
       {/* Responsive 12-Column Grid Canvas */}
       <div className="grid grid-cols-12 gap-4">
         {widgets.map((widget, index) => {
           const ds = datasets.find((d) => d.id === widget.datasetId);
-          const isRemoteActive = activeRemoteWidgetId === widget.id;
+          const isRemoteActive = !readOnly && activeRemoteWidgetId === widget.id;
 
           return (
             <div
               key={widget.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, index)}
+              draggable={!readOnly}
+              onDragStart={(e) => !readOnly && handleDragStart(e, index)}
+              onDragOver={(e) => !readOnly && handleDragOver(e)}
+              onDrop={(e) => !readOnly && handleDrop(e, index)}
               className={`${getColSpanClass(
                 widget.colSpan
               )} relative group transition-all duration-200 ${
@@ -265,6 +272,8 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
                 </div>
               )}
 
+              {!readOnly && (
+                <>
               {/* Action Toolbar on Hover */}
               <div className="absolute top-3 right-10 z-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-slate-900/90 border border-slate-700/80 rounded-lg p-1 shadow-lg">
                 <button
@@ -302,6 +311,9 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
                 </button>
               </div>
 
+                </>
+              )}
+
               {/* Chart Renderer Container */}
               <div className="h-full overflow-hidden rounded-xl">
                 <ChartRenderer
@@ -322,6 +334,8 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
         })}
       </div>
 
+      {!readOnly && (
+        <>
       {/* Modal for editing widget */}
       <WidgetConfigModal
         isOpen={isModalOpen}
@@ -333,6 +347,8 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
         datasets={datasets}
         onSave={handleSaveWidget}
       />
+        </>
+      )}
     </div>
   );
 };

@@ -50,6 +50,7 @@ import { TemplatePickerModal } from './components/Templates/TemplatePickerModal'
 import { DataCleaningModal } from './components/Cleaner/DataCleaningModal';
 import { DashboardFilterBar } from './components/Common/DashboardFilterBar';
 import { DashboardScopeState } from './components/Common/DashboardScopeState';
+import { getDashboardUiMode } from './config/dashboardUiMode';
 import { IndicatorCatalogModal } from './components/Common/IndicatorCatalogModal';
 import { DataQualityView } from './components/Quality/DataQualityView';
 import { DataRefreshView } from './components/Quality/DataRefreshView';
@@ -95,6 +96,7 @@ import {
 } from 'lucide-react';
 
 export default function App() {
+  const isAnalystMode = getDashboardUiMode() === 'analyst';
   const initialDashboardView = useMemo(
     () =>
       readDashboardViewState(
@@ -349,7 +351,7 @@ export default function App() {
       className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-slate-950 font-sans"
     >
       {/* Remote Peer Cursors */}
-      {Object.entries(remoteCursors).map(([id, cursorData]) => {
+      {isAnalystMode && Object.entries(remoteCursors).map(([id, cursorData]) => {
         const cur = cursorData as { x: number; y: number; name: string; color: string };
         return (
           <div
@@ -399,6 +401,13 @@ export default function App() {
                 <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-700/70">
                   DEMONSTRATION DATA
                 </span>
+                <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold border ${
+                  isAnalystMode
+                    ? 'bg-violet-950 text-violet-300 border-violet-700/70'
+                    : 'bg-sky-950 text-sky-300 border-sky-700/70'
+                }`}>
+                  {isAnalystMode ? 'ANALYST MODE' : 'VIEW-ONLY'}
+                </span>
               </div>
               <p className="text-[11px] text-slate-400 font-medium">
                 Agriculture Value Chain Development Infographic &amp; M&amp;E Platform
@@ -430,7 +439,8 @@ export default function App() {
             </button>
 
             {/* Infographic Templates */}
-            <button
+            {isAnalystMode && (
+              <button
               id="btn-templates"
               onClick={() => setIsTemplateModalOpen(true)}
               className="px-2.5 py-1.5 bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-emerald-800/80"
@@ -439,9 +449,11 @@ export default function App() {
               <LayoutTemplate className="w-3.5 h-3.5 text-emerald-400" />
               <span className="hidden sm:inline">Templates</span>
             </button>
+            )}
 
             {/* CSV Import */}
-            <button
+            {isAnalystMode && (
+              <button
               id="btn-import-csv"
               onClick={() => setIsCsvModalOpen(true)}
               className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700/80"
@@ -450,9 +462,11 @@ export default function App() {
               <Upload className="w-3.5 h-3.5 text-emerald-400" />
               <span className="hidden sm:inline">Import CSV</span>
             </button>
+            )}
 
             {/* Data Validation & Cleaning Studio */}
-            <button
+            {isAnalystMode && (
+              <button
               id="btn-data-cleaning"
               onClick={() => {
                 setActiveCleaningDatasetId(datasets[0]?.id || 'ds_district_matrix');
@@ -464,6 +478,7 @@ export default function App() {
               <Wand2 className="w-3.5 h-3.5 text-amber-400" />
               <span className="hidden md:inline">Clean Data</span>
             </button>
+            )}
 
             {/* AI Decision Insights */}
             <button
@@ -488,7 +503,8 @@ export default function App() {
             </button>
 
             {/* Collaboration Team Drawer */}
-            <button
+            {isAnalystMode && (
+              <button
               id="btn-collab-drawer"
               onClick={() => setIsCollabDrawerOpen(true)}
               className="relative px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700/80"
@@ -502,9 +518,11 @@ export default function App() {
                 </span>
               )}
             </button>
+            )}
 
             {/* Network Sync Toggle */}
             <div className="flex items-center gap-1 pl-1 border-l border-slate-800">
+              {isAnalystMode && (
               <button
                 id="btn-toggle-offline"
                 onClick={handleToggleOfflineMode}
@@ -524,6 +542,7 @@ export default function App() {
                   {isOnline ? 'Online' : 'Offline'}
                 </span>
               </button>
+            )}
 
               {/* Sync queue indicator */}
               {pendingSyncCount > 0 && (
@@ -827,7 +846,7 @@ export default function App() {
       )}
 
       {/* Offline Mode Banner when offline */}
-      {!isOnline && (
+      {isAnalystMode && !isOnline && (
         <div className="bg-amber-950/80 border-b border-amber-800/80 px-4 py-2 text-xs text-amber-200 flex items-center justify-between max-w-7xl mx-auto w-full">
           <div className="flex items-center gap-2">
             <WifiOff className="w-4 h-4 text-amber-400 flex-shrink-0" />
@@ -867,6 +886,7 @@ export default function App() {
             datasets={filteredDatasets}
             selectedDistrict={selectedDistrict}
             dataSourceMode={dataSourceMode}
+            readOnly={!isAnalystMode}
             onSelectDistrict={setSelectedDistrict}
             onUpdateCanvas={handleCanvasUpdate}
             activeRemoteWidgetId={activeRemoteWidgetId}
