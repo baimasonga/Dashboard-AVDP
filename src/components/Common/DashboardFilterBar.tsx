@@ -1,6 +1,7 @@
 import React from 'react';
-import { Database, Filter, MapPin, RotateCcw } from 'lucide-react';
+import { CalendarDays, Database, Filter, MapPin, RotateCcw } from 'lucide-react';
 import { ValueChainType } from '../../types';
+import { REPORTING_PERIODS, ReportingPeriod } from '../../data/reportingPeriods';
 
 const VALUE_CHAINS: ValueChainType[] = [
   'All Value Chains',
@@ -17,10 +18,12 @@ interface DashboardFilterBarProps {
   districts: string[];
   selectedDistrict: string | null;
   selectedValueChain: ValueChainType;
+  selectedReportingPeriod: ReportingPeriod;
   visibleDatasetCount: number;
   totalDatasetCount: number;
   onDistrictChange: (district: string | null) => void;
   onValueChainChange: (valueChain: ValueChainType) => void;
+  onReportingPeriodChange: (period: ReportingPeriod) => void;
   onReset: () => void;
 }
 
@@ -28,13 +31,18 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
   districts,
   selectedDistrict,
   selectedValueChain,
+  selectedReportingPeriod,
   visibleDatasetCount,
   totalDatasetCount,
   onDistrictChange,
   onValueChainChange,
+  onReportingPeriodChange,
   onReset,
 }) => {
-  const hasFilters = Boolean(selectedDistrict) || selectedValueChain !== 'All Value Chains';
+  const hasFilters =
+    Boolean(selectedDistrict) ||
+    selectedValueChain !== 'All Value Chains' ||
+    selectedReportingPeriod !== 'Latest available';
 
   return (
     <section
@@ -83,6 +91,27 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
             </select>
           </label>
 
+          <label className="relative">
+            <span className="sr-only">Filter by reporting period</span>
+            <CalendarDays
+              className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500"
+              aria-hidden="true"
+            />
+            <select
+              value={selectedReportingPeriod}
+              onChange={(event) =>
+                onReportingPeriodChange(event.target.value as ReportingPeriod)
+              }
+              className="rounded-lg border border-slate-700 bg-slate-950 py-1.5 pl-8 pr-8 text-xs font-medium text-slate-200 outline-none transition-colors hover:border-slate-600 focus:border-emerald-500"
+            >
+              {REPORTING_PERIODS.map((period) => (
+                <option key={period} value={period}>
+                  {period === 'Latest available' ? 'Latest available period' : period}
+                </option>
+              ))}
+            </select>
+          </label>
+
           {hasFilters && (
             <button
               type="button"
@@ -104,7 +133,7 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
             {visibleDatasetCount} of {totalDatasetCount} datasets in scope
           </span>
           <span className="text-slate-500">
-            Filters apply to infographics, AI analysis, reports and district maps
+            District, value-chain and period scope applies across compatible dashboard views
           </span>
         </div>
       </div>
