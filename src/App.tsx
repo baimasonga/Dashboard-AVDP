@@ -36,6 +36,7 @@ import { TemplatePickerModal } from './components/Templates/TemplatePickerModal'
 import { DataCleaningModal } from './components/Cleaner/DataCleaningModal';
 import { DashboardFilterBar } from './components/Common/DashboardFilterBar';
 import { IndicatorCatalogModal } from './components/Common/IndicatorCatalogModal';
+import { DataQualityView } from './components/Quality/DataQualityView';
 import {
   RicePaddyIcon,
   CassavaTuberIcon,
@@ -78,6 +79,7 @@ export default function App() {
   // Navigation tabs
   const [activeTab, setActiveTab] = useState<
     | 'dashboard'
+    | 'data_quality'
     | 'map'
     | 'value_chains'
     | 'yield_outlook'
@@ -449,6 +451,18 @@ export default function App() {
               <span>Infographics</span>
             </button>
             <button
+              id="tab-data-quality"
+              onClick={() => setActiveTab('data_quality')}
+              className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                activeTab === 'data_quality'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Data Quality</span>
+            </button>
+            <button
               id="tab-map"
               onClick={() => setActiveTab('map')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -669,6 +683,10 @@ export default function App() {
               setIsDataCleaningModalOpen(true);
             }}
           />
+        )}
+
+        {activeTab === 'data_quality' && (
+          <DataQualityView datasets={filteredDatasets} />
         )}
 
         {activeTab === 'map' && (
