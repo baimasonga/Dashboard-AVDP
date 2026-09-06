@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { WidgetConfig, Dataset, CanvasState } from '../../types';
 import { ChartRenderer } from './ChartRenderer';
 import { ChartProvenance } from './ChartProvenance';
+import { ChartErrorBoundary } from './ChartErrorBoundary';
 import { DashboardDataMode } from '../../services/dashboardDataGateway';
 import { WidgetConfigModal } from './WidgetConfigModal';
 import {
@@ -316,12 +317,23 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
 
               {/* Chart Renderer Container */}
               <div className="h-full overflow-hidden rounded-xl">
-                <ChartRenderer
-                  widget={widget}
-                  dataset={ds}
-                  selectedDistrict={selectedDistrict}
-                  onSelectDistrict={onSelectDistrict}
-                />
+                <ChartErrorBoundary
+                  chartTitle={widget.title}
+                  resetKey={[
+                    widget.id,
+                    widget.datasetId || '',
+                    selectedDistrict || '',
+                    ds?.rowCount || 0,
+                    canvasState.version,
+                  ].join(':')}
+                >
+                  <ChartRenderer
+                    widget={widget}
+                    dataset={ds}
+                    selectedDistrict={selectedDistrict}
+                    onSelectDistrict={onSelectDistrict}
+                  />
+                </ChartErrorBoundary>
                 {ds && (
                   <ChartProvenance
                     dataset={ds}
