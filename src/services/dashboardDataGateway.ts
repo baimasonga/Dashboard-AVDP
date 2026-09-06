@@ -17,6 +17,8 @@ interface LiveDatasetResponse {
   generatedAt?: unknown;
 }
 
+const isOptionalString = (value: unknown) => value === undefined || typeof value === 'string';
+
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === 'string');
 
@@ -35,7 +37,12 @@ export const isDataset = (value: unknown): value is Dataset => {
     dataset.rows.every((row) => Boolean(row) && typeof row === 'object' && !Array.isArray(row)) &&
     typeof dataset.rowCount === 'number' &&
     dataset.rowCount === dataset.rows.length &&
-    typeof dataset.uploadedAt === 'string'
+    typeof dataset.uploadedAt === 'string' &&
+    isOptionalString(dataset.source) &&
+    isOptionalString(dataset.reportingPeriod) &&
+    isOptionalString(dataset.refreshedAt) &&
+    (dataset.verificationStatus === undefined ||
+      ['Verified', 'Under review', 'Draft'].includes(dataset.verificationStatus))
   );
 };
 
