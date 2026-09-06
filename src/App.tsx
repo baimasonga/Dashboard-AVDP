@@ -731,7 +731,12 @@ export default function App() {
 
         {activeTab === 'climate_smart' && <ClimateSmartView />}
 
-        {activeTab === 'me_logframe' && <MELogframeView />}
+        {activeTab === 'me_logframe' && (
+          <MELogframeView
+            selectedDistrict={selectedDistrict}
+            selectedValueChain={selectedValueChain}
+          />
+        )}
       </main>
 
       {/* Footer */}
