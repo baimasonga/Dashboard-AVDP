@@ -1,6 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { Dataset } from '../../types';
 import {
+  getDemonstrationDatasetMetadata,
+  ReportingPeriod,
+  VerificationStatus,
+} from '../../data/reportingPeriods';
+import {
   CheckCircle2,
   Clock3,
   Database,
@@ -12,9 +17,8 @@ import {
 
 interface DataRefreshViewProps {
   datasets: Dataset[];
+  selectedReportingPeriod: ReportingPeriod;
 }
-
-type VerificationStatus = 'Verified' | 'Under review' | 'Draft';
 
 const sourceByValueChain: Record<string, string> = {
   Rice: 'AVDP M&E consolidated extract',
@@ -37,27 +41,28 @@ const escapeCsv = (value: unknown) => {
   return `"${text.replace(/"/g, '""')}"`;
 };
 
-export const DataRefreshView: React.FC<DataRefreshViewProps> = ({ datasets }) => {
+export const DataRefreshView: React.FC<DataRefreshViewProps> = ({
+  datasets,
+  selectedReportingPeriod,
+}) => {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | VerificationStatus>('All');
 
   const register = useMemo(
     () =>
-      datasets.map((dataset, index) => {
-        const status: VerificationStatus =
-          index % 5 === 4 ? 'Draft' : index % 3 === 2 ? 'Under review' : 'Verified';
-        const day = String(18 - (index % 8)).padStart(2, '0');
+      datasets.map((dataset) => {
+        const metadata = getDemonstrationDatasetMetadata(dataset);
         return {
           id: dataset.id,
           dataset: dataset.name,
           source: sourceByValueChain[dataset.valueChain] || 'AVDP programme extract',
           valueChain: dataset.valueChain,
-          reportingPeriod: index % 2 === 0 ? 'Q4 2025' : 'FY 2025',
-          refreshDate: `${day} Dec 2025`,
-          refreshCadence: index % 2 === 0 ? 'Quarterly' : 'Annual',
-          status,
+          reportingPeriod: metadata.reportingPeriod,
+          refreshDate: metadata.refreshDate,
+          refreshCadence: metadata.refreshCadence,
+          status: metadata.verificationStatus,
           rows: dataset.rows.length,
-          owner: index % 2 === 0 ? 'M&E Unit' : 'Component lead',
+          owner: metadata.owner,
         };
       }),
     [datasets]
@@ -120,7 +125,7 @@ export const DataRefreshView: React.FC<DataRefreshViewProps> = ({ datasets }) =>
     {
       label: 'Datasets in scope',
       value: register.length.toLocaleString(),
-      note: 'Current value-chain filter',
+      note: 'Current dashboard filters',
       icon: Database,
       color: 'text-sky-400',
     },
@@ -197,7 +202,7 @@ export const DataRefreshView: React.FC<DataRefreshViewProps> = ({ datasets }) =>
           <div>
             <h3 className="text-sm font-bold text-white">Dataset refresh register</h3>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              {filtered.length} of {register.length} dataset(s) shown
+              {filtered.length} of {register.length} dataset(s) shown · Period: {selectedReportingPeriod}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">

@@ -12,6 +12,10 @@ import {
   DEFAULT_CANVAS_CONFIG,
   SIERRA_LEONE_DISTRICTS,
 } from './data/sierraLeoneData';
+import {
+  datasetMatchesReportingPeriod,
+  ReportingPeriod,
+} from './data/reportingPeriods';
 import { storageService } from './services/storageService';
 import { collabService } from './services/collabService';
 import { VisualCanvas } from './components/Builder/VisualCanvas';
@@ -104,17 +108,19 @@ export default function App() {
   const [datasets, setDatasets] = useState<Dataset[]>(DEFAULT_DATASETS);
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedValueChain, setSelectedValueChain] = useState<ValueChainType>('All Value Chains');
+  const [selectedReportingPeriod, setSelectedReportingPeriod] =
+    useState<ReportingPeriod>('Latest available');
 
   const filteredDatasets = useMemo(
     () =>
-      selectedValueChain === 'All Value Chains'
-        ? datasets
-        : datasets.filter(
-            (dataset) =>
-              dataset.valueChain === selectedValueChain ||
-              dataset.valueChain === 'All Value Chains'
-          ),
-    [datasets, selectedValueChain]
+      datasets.filter(
+        (dataset) =>
+          (selectedValueChain === 'All Value Chains' ||
+            dataset.valueChain === selectedValueChain ||
+            dataset.valueChain === 'All Value Chains') &&
+          datasetMatchesReportingPeriod(dataset, selectedReportingPeriod)
+      ),
+    [datasets, selectedReportingPeriod, selectedValueChain]
   );
 
   // Network & Sync State
@@ -666,13 +672,16 @@ export default function App() {
         districts={SIERRA_LEONE_DISTRICTS.map((district) => district.name)}
         selectedDistrict={selectedDistrict}
         selectedValueChain={selectedValueChain}
+        selectedReportingPeriod={selectedReportingPeriod}
         visibleDatasetCount={filteredDatasets.length}
         totalDatasetCount={datasets.length}
         onDistrictChange={setSelectedDistrict}
         onValueChainChange={setSelectedValueChain}
+        onReportingPeriodChange={setSelectedReportingPeriod}
         onReset={() => {
           setSelectedDistrict(null);
           setSelectedValueChain('All Value Chains');
+          setSelectedReportingPeriod('Latest available');
         }}
       />
 
@@ -718,7 +727,10 @@ export default function App() {
         )}
 
         {activeTab === 'data_refresh' && (
-          <DataRefreshView datasets={filteredDatasets} />
+          <DataRefreshView
+            datasets={filteredDatasets}
+            selectedReportingPeriod={selectedReportingPeriod}
+          />
         )}
 
         {activeTab === 'map' && (
@@ -862,6 +874,7 @@ export default function App() {
         datasets={filteredDatasets}
         selectedDistrict={selectedDistrict}
         selectedValueChain={selectedValueChain}
+        selectedReportingPeriod={selectedReportingPeriod}
       />
 
       <CollabDrawer
