@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { WidgetConfig, Dataset, CanvasState } from '../../types';
 import { ChartRenderer } from './ChartRenderer';
+import { ChartProvenance } from './ChartProvenance';
+import { DashboardDataMode } from '../../services/dashboardDataGateway';
 import { WidgetConfigModal } from './WidgetConfigModal';
 import {
   Plus,
@@ -21,6 +23,7 @@ interface VisualCanvasProps {
   canvasState: CanvasState;
   datasets: Dataset[];
   selectedDistrict: string | null;
+  dataSourceMode: DashboardDataMode;
   onSelectDistrict: (district: string | null) => void;
   onUpdateCanvas: (updated: CanvasState) => void;
   activeRemoteWidgetId?: string | null;
@@ -32,6 +35,7 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
   canvasState,
   datasets,
   selectedDistrict,
+  dataSourceMode,
   onSelectDistrict,
   onUpdateCanvas,
   activeRemoteWidgetId,
@@ -299,13 +303,19 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
               </div>
 
               {/* Chart Renderer Container */}
-              <div className="h-full">
+              <div className="h-full overflow-hidden rounded-xl">
                 <ChartRenderer
                   widget={widget}
                   dataset={ds}
                   selectedDistrict={selectedDistrict}
                   onSelectDistrict={onSelectDistrict}
                 />
+                {ds && (
+                  <ChartProvenance
+                    dataset={ds}
+                    dataSourceMode={dataSourceMode}
+                  />
+                )}
               </div>
             </div>
           );
