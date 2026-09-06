@@ -89,6 +89,8 @@ import {
   DollarSign,
   Briefcase,
   Microscope,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 
 export default function App() {
@@ -111,6 +113,7 @@ export default function App() {
   const [dataSourceLabel, setDataSourceLabel] = useState('Loading dashboard data source…');
   const [dataSourceLoadedAt, setDataSourceLoadedAt] = useState<string | null>(null);
   const [dataSourceError, setDataSourceError] = useState<string | null>(null);
+  const [isPresentationMode, setIsPresentationMode] = useState(false);
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(
     initialDashboardView.district
   );
@@ -140,6 +143,14 @@ export default function App() {
       reportingPeriod: selectedReportingPeriod,
     });
   }, [activeTab, selectedDistrict, selectedReportingPeriod, selectedValueChain]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) setIsPresentationMode(false);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   // Network & Sync State
   const [isOnline, setIsOnline] = useState<boolean>(true);
@@ -295,6 +306,19 @@ export default function App() {
     setIsSyncing(false);
   };
 
+  const handlePresentationMode = async () => {
+    if (isPresentationMode) {
+      setIsPresentationMode(false);
+      if (document.fullscreenElement) {
+        await document.exitFullscreen().catch(() => undefined);
+      }
+      return;
+    }
+
+    setIsPresentationMode(true);
+    await document.documentElement.requestFullscreen().catch(() => undefined);
+  };
+
   const handleCopyDashboardView = async () => {
     const url = buildDashboardViewUrl({
       tab: activeTab,
@@ -347,6 +371,8 @@ export default function App() {
         </div>
       )}
 
+      {!isPresentationMode && (
+        <>
       {/* Top Main Navigation Header */}
       <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
@@ -375,6 +401,16 @@ export default function App() {
 
           {/* Action Bar (Templates, CSV Import, Data Cleaning, Local Insights, Export, Collab, Sync) */}
           <div className="flex items-center gap-2">
+            <button
+              id="btn-presentation-mode"
+              onClick={handlePresentationMode}
+              className="px-2.5 py-1.5 bg-indigo-950/70 hover:bg-indigo-900 text-indigo-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-indigo-800/80"
+              title="Show the current dashboard view without navigation or authoring controls"
+            >
+              <Maximize2 className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden sm:inline">Present</span>
+            </button>
+
             {/* Indicator catalogue and data provenance */}
             <button
               id="btn-indicator-catalog"
@@ -708,6 +744,8 @@ export default function App() {
           </div>
         </div>
       </header>
+        </>
+      )}
 
       {/* Dashboard-wide data provenance notice */}
       <section
@@ -744,6 +782,7 @@ export default function App() {
         </div>
       </section>
 
+      {!isPresentationMode && (
       <DashboardFilterBar
         districts={SIERRA_LEONE_DISTRICTS.map((district) => district.name)}
         selectedDistrict={selectedDistrict}
@@ -761,6 +800,28 @@ export default function App() {
           setSelectedReportingPeriod('Latest available');
         }}
       />
+      )}
+
+      {isPresentationMode && (
+        <section className="sticky top-0 z-40 border-b border-indigo-800 bg-slate-950/95 px-4 py-3 backdrop-blur-md">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-bold text-white">{canvasState.title}</p>
+              <p className="mt-0.5 text-[11px] text-slate-400">
+                {selectedDistrict || 'All districts'} • {selectedValueChain} • {selectedReportingPeriod}
+                {' • '}{dataSourceMode === 'demonstration' ? 'Demonstration data' : 'Live data'}
+              </p>
+            </div>
+            <button
+              onClick={handlePresentationMode}
+              className="flex items-center gap-1.5 rounded-lg border border-indigo-700 bg-indigo-950 px-3 py-1.5 text-xs font-bold text-indigo-200 hover:bg-indigo-900"
+            >
+              <Minimize2 className="h-3.5 w-3.5" />
+              Exit presentation
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Offline Mode Banner when offline */}
       {!isOnline && (
