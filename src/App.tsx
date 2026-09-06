@@ -312,7 +312,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Action Bar (Templates, CSV Import, Data Cleaning, AI Insights, Export, Collab, Sync) */}
+          {/* Action Bar (Templates, CSV Import, Data Cleaning, Local Insights, Export, Collab, Sync) */}
           <div className="flex items-center gap-2">
             {/* Indicator catalogue and data provenance */}
             <button
@@ -369,7 +369,7 @@ export default function App() {
               title="Automated Data-Driven Decision Support"
             >
               <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-              <span className="hidden sm:inline">AI Insights</span>
+              <span className="hidden sm:inline">Local Insights</span>
             </button>
 
             {/* Export & Reporting */}
@@ -833,6 +833,8 @@ export default function App() {
         onClose={() => setIsAiModalOpen(false)}
         dataset={filteredDatasets[0] || datasets[0] || DEFAULT_DATASETS[0]}
         canvasState={canvasState}
+        selectedDistrict={selectedDistrict}
+        selectedValueChain={selectedValueChain}
       />
 
       <ReportingModal
