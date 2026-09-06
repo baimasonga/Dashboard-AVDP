@@ -60,9 +60,16 @@ Raw imports should be retained. Suggested cleaning actions must not silently alt
 - `VITE_CARTO_API_BASE_URL`: optional public API base URL.
 - `VITE_DASHBOARD_DATA_MODE`: `demo` (default) for fictitious local datasets or `live` for the approved read-only analytical service.
 - `VITE_DASHBOARD_DATA_API_URL`: base URL of the approved service; required only in live mode and expected to expose `GET /datasets`.
+- `VITE_DASHBOARD_UI_MODE`: `viewer` (default) for the read-only dashboard surface or `analyst` for trusted prototype authors who need canvas and import tools. This setting is not an authentication boundary.
 - `PORT`: deployment port.
 
 Credentials must be configured through the hosting platform and must never be committed to the repository.
+
+## Interface modes
+
+The default **viewer** mode exposes visualization, filtering, provenance, local insights, reporting and presentation features. It hides prototype authoring, CSV import, data-cleaning, collaboration and offline-simulation controls.
+
+The **analyst** mode restores those design-stage tools for trusted dashboard authors. Production authorization must still be enforced by the hosting and data-service layers; the interface setting alone is not security.
 
 ## Production transition
 
