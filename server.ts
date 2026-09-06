@@ -3,7 +3,6 @@ import http from 'http';
 import path from 'path';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -38,22 +37,6 @@ let serverCanvasState: any = null;
 let serverDatasets: Record<string, any> = {};
 const activeCollaborators = new Map<string, { ws: WebSocket; user: Collaborator }>();
 let changeLog: SyncItem[] = [];
-
-// Gemini initialization
-let aiClient: GoogleGenAI | null = null;
-function getGeminiClient(): GoogleGenAI | null {
-  if (!aiClient && process.env.GEMINI_API_KEY) {
-    aiClient = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
-      },
-    });
-  }
-  return aiClient;
-}
 
 // WebSocket setup
 const wss = new WebSocketServer({ server, path: '/ws' });
@@ -314,76 +297,14 @@ app.get('/api/carto/status', async (req, res) => {
   }
 });
 
-// Automated Data-Driven Insights endpoint using Gemini 3.8 Flash
-app.post('/api/ai/analyze-data', async (req, res) => {
-  try {
-    const { datasetSummary, context, query } = req.body;
-    const client = getGeminiClient();
-
-    if (!client) {
-      // Demonstration-only response while the AI service is not configured
-      return res.json({
-        success: true,
-        source: 'demonstration_dataset',
-        dataStatus: 'demonstration',
-        disclaimer: 'Illustrative analysis generated from fictitious demonstration data. It is not an official AVDP finding.',
-        title: 'Demonstration Agricultural Value Chain Briefing',
-        summary: `Analysis of Sierra Leone AVCDP project data across 16 operational districts reveals significant productivity gains in inland valley swamp (IVS) rice and mechanized cassava processing, alongside logistics bottlenecks in eastern cocoa hubs.`,
-        keyFindings: [
-          'Rice yields in Bo and Kenema IVS clusters reached 3.8 MT/Ha, outperforming traditional upland cultivation by 48%.',
-          'High Quality Cassava Flour (HQCF) processing mills in Port Loko and Tonkolili operated at 82% rated capacity.',
-          'Smallholder outgrower access to micro-finance and certified organic inputs correlated with a 24% reduction in post-harvest spoilage.',
-          'Road accessibility during heavy rainy season months remains the primary constraint for cocoa exports in Kailahun and Kono.',
-        ],
-        recommendations: [
-          'Prioritize solar-powered drying units in Kambia and Moyamba to reduce aflatoxin risk in grain storage.',
-          'Expand mobile aggregation hubs linking farmer-based organizations (FBOs) directly to institutional off-takers.',
-          'Deploy district-level extension agents with offline data collection tablets for M&E verification.',
-        ],
-      });
-    }
-
-    const prompt = `You are a Monitoring & Evaluation and agricultural value-chain analyst for the Sierra Leone Agriculture Value Chain Development Project (AVDP).
-Context:
-${context || 'General AVDP project review across Rice, Cassava, Cocoa, Oil Palm, Livestock, and Fish value chains in 16 districts.'}
-
-Dataset Summary:
-${JSON.stringify(datasetSummary, null, 2)}
-
-User specific inquiry:
-${query || 'Generate an executive data-driven diagnostic report on productivity, M&E targets vs actuals, district performance, and operational recommendations.'}
-
-Please return a JSON response with the following format:
-{
-  "title": "Clear concise analytical title",
-  "summary": "Executive summary paragraph (3-4 sentences) with specific numbers, districts, and percentage changes",
-  "keyFindings": ["Finding 1 with metric", "Finding 2 with metric", "Finding 3 with metric", "Finding 4 with metric"],
-  "bottlenecks": ["Key operational constraint 1", "Key operational constraint 2"],
-  "recommendations": ["Actionable recommendation 1", "Actionable recommendation 2", "Actionable recommendation 3"],
-  "impactScore": 84
-}`;
-
-    const response = await client.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      },
-    });
-
-    const parsed = JSON.parse(response.text || '{}');
-    res.json({
-      success: true,
-      source: 'gemini_3.8_flash',
-      ...parsed,
-    });
-  } catch (err: any) {
-    console.error('Gemini error:', err);
-    res.status(500).json({
-      success: false,
-      error: 'Unable to generate insights at this time',
-    });
-  }
+// External AI analysis is intentionally disabled. Dashboard insights are calculated
+// locally in the browser so row-level programme data is not transmitted externally.
+app.post('/api/ai/analyze-data', (_req, res) => {
+  res.status(410).json({
+    success: false,
+    code: 'LOCAL_INSIGHTS_ONLY',
+    error: 'External AI analysis is disabled. Use the dashboard Local Insights panel.',
+  });
 });
 
 // Vite middleware for dev or static serving for prod
