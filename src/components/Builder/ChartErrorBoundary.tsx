@@ -1,4 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface ChartErrorBoundaryProps {
@@ -11,7 +12,7 @@ interface ChartErrorBoundaryState {
   hasError: boolean;
 }
 
-export class ChartErrorBoundary extends Component<
+export class ChartErrorBoundary extends React.Component<
   ChartErrorBoundaryProps,
   ChartErrorBoundaryState
 > {
