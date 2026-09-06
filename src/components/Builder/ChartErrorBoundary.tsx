@@ -16,6 +16,8 @@ export class ChartErrorBoundary extends React.Component<
   ChartErrorBoundaryProps,
   ChartErrorBoundaryState
 > {
+  public declare readonly props: Readonly<ChartErrorBoundaryProps>;
+  public declare setState: (state: Partial<ChartErrorBoundaryState>) => void;
   public state: ChartErrorBoundaryState = { hasError: false };
 
   public static getDerivedStateFromError(): ChartErrorBoundaryState {
