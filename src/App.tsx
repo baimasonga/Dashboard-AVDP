@@ -350,6 +350,13 @@ export default function App() {
       onMouseMove={handleMouseMove}
       className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-slate-950 font-sans"
     >
+      <a
+        href="#dashboard-main"
+        className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-lg bg-emerald-400 px-4 py-2 text-sm font-bold text-slate-950 shadow-xl transition-transform focus:translate-y-0"
+      >
+        Skip to dashboard content
+      </a>
+
       {/* Remote Peer Cursors */}
       {isAnalystMode && Object.entries(remoteCursors).map(([id, cursorData]) => {
         const cur = cursorData as { x: number; y: number; name: string; color: string };
@@ -374,7 +381,7 @@ export default function App() {
 
       {/* Sync Toast Notification */}
       {syncToast && (
-        <div className="fixed top-16 right-6 z-50 bg-slate-900 border border-emerald-500/80 shadow-2xl rounded-xl px-4 py-3 text-xs text-slate-200 flex items-center gap-3 animate-in slide-in-from-top-3">
+        <div role="status" aria-live="polite" className="fixed top-16 right-6 z-50 bg-slate-900 border border-emerald-500/80 shadow-2xl rounded-xl px-4 py-3 text-xs text-slate-200 flex items-center gap-3 animate-in slide-in-from-top-3">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
           <span className="font-medium">{syncToast}</span>
         </div>
@@ -562,9 +569,12 @@ export default function App() {
 
         {/* AVDP Comprehensive Component Navigation Strip */}
         <div className="bg-slate-950/90 border-t border-slate-800/90 px-4 sm:px-6 lg:px-8 py-2">
-          <div className="max-w-7xl mx-auto flex items-center gap-1.5 overflow-x-auto scrollbar-thin pb-0.5 text-xs">
+          <div role="tablist" aria-label="Dashboard analytical views" className="max-w-7xl mx-auto flex items-center gap-1.5 overflow-x-auto scrollbar-thin pb-0.5 text-xs">
             <button
               id="tab-dashboard"
+              role="tab"
+              aria-selected={activeTab === 'dashboard'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('dashboard')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'dashboard'
@@ -577,6 +587,9 @@ export default function App() {
             </button>
             <button
               id="tab-data-quality"
+              role="tab"
+              aria-selected={activeTab === 'data_quality'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('data_quality')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'data_quality'
@@ -589,6 +602,9 @@ export default function App() {
             </button>
             <button
               id="tab-data-refresh"
+              role="tab"
+              aria-selected={activeTab === 'data_refresh'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('data_refresh')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'data_refresh'
@@ -601,6 +617,9 @@ export default function App() {
             </button>
             <button
               id="tab-map"
+              role="tab"
+              aria-selected={activeTab === 'map'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('map')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'map'
@@ -613,6 +632,9 @@ export default function App() {
             </button>
             <button
               id="tab-district-profile"
+              role="tab"
+              aria-selected={activeTab === 'district_profile'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('district_profile')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'district_profile'
@@ -625,6 +647,9 @@ export default function App() {
             </button>
             <button
               id="tab-value-chains"
+              role="tab"
+              aria-selected={activeTab === 'value_chains'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('value_chains')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'value_chains'
@@ -637,6 +662,9 @@ export default function App() {
             </button>
             <button
               id="tab-yield-outlook"
+              role="tab"
+              aria-selected={activeTab === 'yield_outlook'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('yield_outlook')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'yield_outlook'
@@ -649,6 +677,9 @@ export default function App() {
             </button>
             <button
               id="tab-yield-studies"
+              role="tab"
+              aria-selected={activeTab === 'yield_studies'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('yield_studies')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'yield_studies'
@@ -661,6 +692,9 @@ export default function App() {
             </button>
             <button
               id="tab-ffs"
+              role="tab"
+              aria-selected={activeTab === 'ffs'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('ffs')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'ffs'
@@ -673,6 +707,9 @@ export default function App() {
             </button>
             <button
               id="tab-financial"
+              role="tab"
+              aria-selected={activeTab === 'financial'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('financial')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'financial'
@@ -685,6 +722,9 @@ export default function App() {
             </button>
             <button
               id="tab-procurement"
+              role="tab"
+              aria-selected={activeTab === 'procurement'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('procurement')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'procurement'
@@ -697,6 +737,9 @@ export default function App() {
             </button>
             <button
               id="tab-agribusiness"
+              role="tab"
+              aria-selected={activeTab === 'agribusiness'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('agribusiness')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'agribusiness'
@@ -709,6 +752,9 @@ export default function App() {
             </button>
             <button
               id="tab-infrastructure"
+              role="tab"
+              aria-selected={activeTab === 'infrastructure'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('infrastructure')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'infrastructure'
@@ -721,6 +767,9 @@ export default function App() {
             </button>
             <button
               id="tab-gals"
+              role="tab"
+              aria-selected={activeTab === 'gals'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('gals')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'gals'
@@ -733,6 +782,9 @@ export default function App() {
             </button>
             <button
               id="tab-grm"
+              role="tab"
+              aria-selected={activeTab === 'grm'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('grm')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'grm'
@@ -745,6 +797,9 @@ export default function App() {
             </button>
             <button
               id="tab-climate"
+              role="tab"
+              aria-selected={activeTab === 'climate_smart'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('climate_smart')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'climate_smart'
@@ -757,6 +812,9 @@ export default function App() {
             </button>
             <button
               id="tab-me"
+              role="tab"
+              aria-selected={activeTab === 'me_logframe'}
+              aria-controls="dashboard-main"
               onClick={() => setActiveTab('me_logframe')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                 activeTab === 'me_logframe'
@@ -865,7 +923,7 @@ export default function App() {
       )}
 
       {/* Main Workspace Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main id="dashboard-main" tabIndex={-1} aria-label="Dashboard content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {(['dashboard', 'data_quality', 'data_refresh'] as const).includes(activeTab as 'dashboard' | 'data_quality' | 'data_refresh') &&
           (dataSourceError || filteredDatasets.length === 0) && (
             <DashboardScopeState
