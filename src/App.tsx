@@ -49,6 +49,7 @@ import { CollabDrawer } from './components/Collab/CollabDrawer';
 import { TemplatePickerModal } from './components/Templates/TemplatePickerModal';
 import { DataCleaningModal } from './components/Cleaner/DataCleaningModal';
 import { DashboardFilterBar } from './components/Common/DashboardFilterBar';
+import { DashboardScopeState } from './components/Common/DashboardScopeState';
 import { IndicatorCatalogModal } from './components/Common/IndicatorCatalogModal';
 import { DataQualityView } from './components/Quality/DataQualityView';
 import { DataRefreshView } from './components/Quality/DataRefreshView';
@@ -304,6 +305,12 @@ export default function App() {
     setIsSyncing(true);
     await storageService.syncWithCloud();
     setIsSyncing(false);
+  };
+
+  const resetDashboardFilters = () => {
+    setSelectedDistrict(null);
+    setSelectedValueChain('All Value Chains');
+    setSelectedReportingPeriod('Latest available');
   };
 
   const handlePresentationMode = async () => {
@@ -794,11 +801,7 @@ export default function App() {
         onValueChainChange={setSelectedValueChain}
         onReportingPeriodChange={setSelectedReportingPeriod}
         onCopyView={handleCopyDashboardView}
-        onReset={() => {
-          setSelectedDistrict(null);
-          setSelectedValueChain('All Value Chains');
-          setSelectedReportingPeriod('Latest available');
-        }}
+        onReset={resetDashboardFilters}
       />
       )}
 
@@ -844,7 +847,21 @@ export default function App() {
 
       {/* Main Workspace Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {activeTab === 'dashboard' && (
+        {(['dashboard', 'data_quality', 'data_refresh'] as const).includes(activeTab as 'dashboard' | 'data_quality' | 'data_refresh') &&
+          (dataSourceError || filteredDatasets.length === 0) && (
+            <DashboardScopeState
+              kind={dataSourceError ? 'source-error' : 'empty-scope'}
+              district={selectedDistrict}
+              valueChain={selectedValueChain}
+              reportingPeriod={selectedReportingPeriod}
+              error={dataSourceError}
+              onResetFilters={resetDashboardFilters}
+              onRetrySource={() => window.location.reload()}
+              onOpenRefreshMonitor={() => setActiveTab('data_refresh')}
+            />
+          )}
+
+        {activeTab === 'dashboard' && !dataSourceError && filteredDatasets.length > 0 && (
           <VisualCanvas
             canvasState={canvasState}
             datasets={filteredDatasets}
@@ -860,11 +877,11 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'data_quality' && (
+        {activeTab === 'data_quality' && !dataSourceError && filteredDatasets.length > 0 && (
           <DataQualityView datasets={filteredDatasets} />
         )}
 
-        {activeTab === 'data_refresh' && (
+        {activeTab === 'data_refresh' && !dataSourceError && filteredDatasets.length > 0 && (
           <DataRefreshView
             datasets={filteredDatasets}
             selectedReportingPeriod={selectedReportingPeriod}
