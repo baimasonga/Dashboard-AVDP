@@ -16,6 +16,12 @@ import {
   datasetMatchesReportingPeriod,
   ReportingPeriod,
 } from './data/reportingPeriods';
+import {
+  buildDashboardViewUrl,
+  DashboardTab,
+  readDashboardViewState,
+  replaceDashboardViewUrl,
+} from './data/dashboardViewState';
 import { storageService } from './services/storageService';
 import {
   dashboardDataGateway,
@@ -86,26 +92,16 @@ import {
 } from 'lucide-react';
 
 export default function App() {
+  const initialDashboardView = useMemo(
+    () =>
+      readDashboardViewState(
+        SIERRA_LEONE_DISTRICTS.map((district) => district.name)
+      ),
+    []
+  );
+
   // Navigation tabs
-  const [activeTab, setActiveTab] = useState<
-    | 'dashboard'
-    | 'data_quality'
-    | 'data_refresh'
-    | 'map'
-    | 'district_profile'
-    | 'value_chains'
-    | 'yield_outlook'
-    | 'yield_studies'
-    | 'ffs'
-    | 'financial'
-    | 'procurement'
-    | 'agribusiness'
-    | 'infrastructure'
-    | 'gals'
-    | 'grm'
-    | 'climate_smart'
-    | 'me_logframe'
-  >('dashboard');
+  const [activeTab, setActiveTab] = useState<DashboardTab>(initialDashboardView.tab);
 
   // Core app state
   const [canvasState, setCanvasState] = useState<CanvasState>(DEFAULT_CANVAS_CONFIG);
@@ -115,10 +111,14 @@ export default function App() {
   const [dataSourceLabel, setDataSourceLabel] = useState('Loading dashboard data source…');
   const [dataSourceLoadedAt, setDataSourceLoadedAt] = useState<string | null>(null);
   const [dataSourceError, setDataSourceError] = useState<string | null>(null);
-  const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
-  const [selectedValueChain, setSelectedValueChain] = useState<ValueChainType>('All Value Chains');
+  const [selectedDistrict, setSelectedDistrict] = useState<string | null>(
+    initialDashboardView.district
+  );
+  const [selectedValueChain, setSelectedValueChain] = useState<ValueChainType>(
+    initialDashboardView.valueChain
+  );
   const [selectedReportingPeriod, setSelectedReportingPeriod] =
-    useState<ReportingPeriod>('Latest available');
+    useState<ReportingPeriod>(initialDashboardView.reportingPeriod);
 
   const filteredDatasets = useMemo(
     () =>
@@ -131,6 +131,15 @@ export default function App() {
       ),
     [datasets, selectedReportingPeriod, selectedValueChain]
   );
+
+  useEffect(() => {
+    replaceDashboardViewUrl({
+      tab: activeTab,
+      district: selectedDistrict,
+      valueChain: selectedValueChain,
+      reportingPeriod: selectedReportingPeriod,
+    });
+  }, [activeTab, selectedDistrict, selectedReportingPeriod, selectedValueChain]);
 
   // Network & Sync State
   const [isOnline, setIsOnline] = useState<boolean>(true);
@@ -284,6 +293,23 @@ export default function App() {
     setIsSyncing(true);
     await storageService.syncWithCloud();
     setIsSyncing(false);
+  };
+
+  const handleCopyDashboardView = async () => {
+    const url = buildDashboardViewUrl({
+      tab: activeTab,
+      district: selectedDistrict,
+      valueChain: selectedValueChain,
+      reportingPeriod: selectedReportingPeriod,
+    });
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setSyncToast('Dashboard view link copied.');
+    } catch {
+      setSyncToast('Unable to copy the view link. Please copy the browser address.');
+    }
+    window.setTimeout(() => setSyncToast(null), 3000);
   };
 
   return (
@@ -728,6 +754,7 @@ export default function App() {
         onDistrictChange={setSelectedDistrict}
         onValueChainChange={setSelectedValueChain}
         onReportingPeriodChange={setSelectedReportingPeriod}
+        onCopyView={handleCopyDashboardView}
         onReset={() => {
           setSelectedDistrict(null);
           setSelectedValueChain('All Value Chains');

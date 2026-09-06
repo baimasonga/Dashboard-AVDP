@@ -1,18 +1,8 @@
 import React from 'react';
-import { CalendarDays, Database, Filter, MapPin, RotateCcw } from 'lucide-react';
+import { CalendarDays, Database, Filter, Link2, MapPin, RotateCcw } from 'lucide-react';
 import { ValueChainType } from '../../types';
 import { REPORTING_PERIODS, ReportingPeriod } from '../../data/reportingPeriods';
-
-const VALUE_CHAINS: ValueChainType[] = [
-  'All Value Chains',
-  'Rice (IVS & Bolilands)',
-  'Cassava & HQCF',
-  'Cocoa & Coffee',
-  'Oil Palm & CPO',
-  'Horticulture & Vegetables',
-  'Poultry & Livestock',
-  'Inland Aquaculture',
-];
+import { DASHBOARD_VALUE_CHAINS } from '../../data/dashboardViewState';
 
 interface DashboardFilterBarProps {
   districts: string[];
@@ -24,6 +14,7 @@ interface DashboardFilterBarProps {
   onDistrictChange: (district: string | null) => void;
   onValueChainChange: (valueChain: ValueChainType) => void;
   onReportingPeriodChange: (period: ReportingPeriod) => void;
+  onCopyView: () => void;
   onReset: () => void;
 }
 
@@ -37,6 +28,7 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
   onDistrictChange,
   onValueChainChange,
   onReportingPeriodChange,
+  onCopyView,
   onReset,
 }) => {
   const hasFilters =
@@ -83,7 +75,7 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
               onChange={(event) => onValueChainChange(event.target.value as ValueChainType)}
               className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-200 outline-none transition-colors hover:border-slate-600 focus:border-emerald-500"
             >
-              {VALUE_CHAINS.map((valueChain) => (
+              {DASHBOARD_VALUE_CHAINS.map((valueChain) => (
                 <option key={valueChain} value={valueChain}>
                   {valueChain}
                 </option>
@@ -111,6 +103,16 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
               ))}
             </select>
           </label>
+
+          <button
+            type="button"
+            onClick={onCopyView}
+            className="flex items-center gap-1 rounded-lg border border-sky-800 bg-sky-950/50 px-2.5 py-1.5 text-xs font-semibold text-sky-200 transition-colors hover:bg-sky-900"
+            title="Copy a link to the current dashboard view and filters"
+          >
+            <Link2 className="h-3 w-3" aria-hidden="true" />
+            Copy view link
+          </button>
 
           {hasFilters && (
             <button
