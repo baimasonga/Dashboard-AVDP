@@ -68,7 +68,7 @@ export type BasemapType = 'voyager' | 'dark' | 'light' | 'osm' | 'satellite';
 
 const CARTO_TOKEN =
   (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_CARTO_TOKEN) ||
-  'eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfc3A0d3YzbnoiLCJqdGkiOiJiMDBhNzNiOSIsImV4cCI6MTgyMDE4NDQyMH0.cqFblPB-6RZr3t5KEffGzdu1E29QvsVaP45QZ_FrRrY';
+  '';
 
 const CARTO_API_BASE_URL =
   (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_CARTO_API_BASE_URL) ||
@@ -180,8 +180,8 @@ export const SierraLeoneMap: React.FC<SierraLeoneMapProps> = ({
     apiBaseUrl: string;
   }>({
     pinging: false,
-    connected: true,
-    account: 'ac_sp4wv3nz',
+    connected: false,
+    account: 'not-configured',
     region: 'gcp-us-east1',
     apiBaseUrl: CARTO_API_BASE_URL,
   });
@@ -196,7 +196,7 @@ export const SierraLeoneMap: React.FC<SierraLeoneMapProps> = ({
         connected: data.authenticated || data.success,
         latencyMs: data.latencyMs,
         statusCode: data.statusCode,
-        account: data.account || 'ac_sp4wv3nz',
+        account: data.account || 'not-configured',
         region: data.region || 'gcp-us-east1',
         apiBaseUrl: data.apiBaseUrl || CARTO_API_BASE_URL,
       });
@@ -204,7 +204,7 @@ export const SierraLeoneMap: React.FC<SierraLeoneMapProps> = ({
       setCartoApiStatus((prev) => ({
         ...prev,
         pinging: false,
-        connected: true,
+        connected: false,
       }));
     }
   }, []);
