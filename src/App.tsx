@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   CanvasState,
   Dataset,
   DistrictMetric,
   Collaborator,
   SyncQueueItem,
+  ValueChainType,
 } from './types';
 import {
   DEFAULT_DATASETS,
@@ -33,6 +34,7 @@ import { ReportingModal } from './components/Export/ReportingModal';
 import { CollabDrawer } from './components/Collab/CollabDrawer';
 import { TemplatePickerModal } from './components/Templates/TemplatePickerModal';
 import { DataCleaningModal } from './components/Cleaner/DataCleaningModal';
+import { DashboardFilterBar } from './components/Common/DashboardFilterBar';
 import {
   RicePaddyIcon,
   CassavaTuberIcon,
@@ -94,6 +96,19 @@ export default function App() {
   const [canvasState, setCanvasState] = useState<CanvasState>(DEFAULT_CANVAS_CONFIG);
   const [datasets, setDatasets] = useState<Dataset[]>(DEFAULT_DATASETS);
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
+  const [selectedValueChain, setSelectedValueChain] = useState<ValueChainType>('All Value Chains');
+
+  const filteredDatasets = useMemo(
+    () =>
+      selectedValueChain === 'All Value Chains'
+        ? datasets
+        : datasets.filter(
+            (dataset) =>
+              dataset.valueChain === selectedValueChain ||
+              dataset.valueChain === 'All Value Chains'
+          ),
+    [datasets, selectedValueChain]
+  );
 
   // Network & Sync State
   const [isOnline, setIsOnline] = useState<boolean>(true);
@@ -592,6 +607,20 @@ export default function App() {
         </div>
       </section>
 
+      <DashboardFilterBar
+        districts={SIERRA_LEONE_DISTRICTS.map((district) => district.name)}
+        selectedDistrict={selectedDistrict}
+        selectedValueChain={selectedValueChain}
+        visibleDatasetCount={filteredDatasets.length}
+        totalDatasetCount={datasets.length}
+        onDistrictChange={setSelectedDistrict}
+        onValueChainChange={setSelectedValueChain}
+        onReset={() => {
+          setSelectedDistrict(null);
+          setSelectedValueChain('All Value Chains');
+        }}
+      />
+
       {/* Offline Mode Banner when offline */}
       {!isOnline && (
         <div className="bg-amber-950/80 border-b border-amber-800/80 px-4 py-2 text-xs text-amber-200 flex items-center justify-between max-w-7xl mx-auto w-full">
@@ -616,7 +645,7 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <VisualCanvas
             canvasState={canvasState}
-            datasets={datasets}
+            datasets={filteredDatasets}
             selectedDistrict={selectedDistrict}
             onSelectDistrict={setSelectedDistrict}
             onUpdateCanvas={handleCanvasUpdate}
@@ -738,7 +767,7 @@ export default function App() {
       <AiInsightsModal
         isOpen={isAiModalOpen}
         onClose={() => setIsAiModalOpen(false)}
-        dataset={datasets[0] || DEFAULT_DATASETS[0]}
+        dataset={filteredDatasets[0] || datasets[0] || DEFAULT_DATASETS[0]}
         canvasState={canvasState}
       />
 
@@ -746,7 +775,7 @@ export default function App() {
         isOpen={isReportingOpen}
         onClose={() => setIsReportingOpen(false)}
         canvasState={canvasState}
-        datasets={datasets}
+        datasets={filteredDatasets}
         selectedDistrict={selectedDistrict}
       />
 
@@ -759,8 +788,8 @@ export default function App() {
       <TemplatePickerModal
         isOpen={isTemplateModalOpen}
         onClose={() => setIsTemplateModalOpen(false)}
-        datasets={datasets}
-        currentDatasetId={datasets[0]?.id}
+        datasets={filteredDatasets}
+        currentDatasetId={filteredDatasets[0]?.id}
         onApplyTemplate={(newCanvas) => {
           handleCanvasUpdate(newCanvas);
           setSyncToast(`Applied template "${newCanvas.title}"`);
