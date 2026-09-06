@@ -53,12 +53,13 @@ Raw imports should be retained. Suggested cleaning actions must not silently alt
 
 ## Configuration
 
-- `GEMINI_API_KEY`: optional server-side AI credential.
 - `CARTO_TOKEN`: optional server-side CARTO API credential.
 - `CARTO_ACCOUNT_ID`: optional CARTO account identifier.
 - `CARTO_API_BASE_URL`: optional CARTO API base URL.
 - `VITE_CARTO_TOKEN`: optional browser-visible restricted basemap token only. Never place a private CARTO API token here.
 - `VITE_CARTO_API_BASE_URL`: optional public API base URL.
+- `VITE_DASHBOARD_DATA_MODE`: `demo` (default) for fictitious local datasets or `live` for the approved read-only analytical service.
+- `VITE_DASHBOARD_DATA_API_URL`: base URL of the approved service; required only in live mode and expected to expose `GET /datasets`.
 - `PORT`: deployment port.
 
 Credentials must be configured through the hosting platform and must never be committed to the repository.
