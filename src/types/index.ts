@@ -34,6 +34,10 @@ export interface Dataset {
   rowCount: number;
   uploadedAt: string;
   isCustom?: boolean;
+  source?: string;
+  reportingPeriod?: string;
+  refreshedAt?: string;
+  verificationStatus?: 'Verified' | 'Under review' | 'Draft';
 }
 
 export interface FlowStep {
