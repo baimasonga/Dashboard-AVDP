@@ -9,11 +9,11 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT || 3000);
 const server = http.createServer(app);
 
-app.use(express.json({ limit: '20mb' }));
-app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 // In-memory server-authoritative state for real-time collaboration and cloud syncing
 interface Collaborator {
@@ -245,10 +245,7 @@ app.post('/api/sync', (req, res) => {
 
 // CARTO Integration & Token status endpoint
 app.get('/api/carto/config', (req, res) => {
-  const token =
-    process.env.CARTO_TOKEN ||
-    process.env.VITE_CARTO_TOKEN ||
-    'eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfc3A0d3YzbnoiLCJqdGkiOiJiMDBhNzNiOSIsImV4cCI6MTgyMDE4NDQyMH0.cqFblPB-6RZr3t5KEffGzdu1E29QvsVaP45QZ_FrRrY';
+  const token = process.env.CARTO_TOKEN;
   const apiBaseUrl =
     process.env.CARTO_API_BASE_URL ||
     process.env.VITE_CARTO_API_BASE_URL ||
@@ -257,10 +254,9 @@ app.get('/api/carto/config', (req, res) => {
   res.json({
     success: true,
     configured: Boolean(token),
-    token: token || null,
     apiBaseUrl,
     region: 'gcp-us-east1',
-    account: 'ac_sp4wv3nz',
+    account: process.env.CARTO_ACCOUNT_ID || null,
     allowedApis: ['maps'],
     attribution: '© CARTO © OpenStreetMap contributors',
   });
@@ -268,14 +264,21 @@ app.get('/api/carto/config', (req, res) => {
 
 // Live CARTO Platform API Ping / Health Check
 app.get('/api/carto/status', async (req, res) => {
-  const token =
-    process.env.CARTO_TOKEN ||
-    process.env.VITE_CARTO_TOKEN ||
-    'eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfc3A0d3YzbnoiLCJqdGkiOiJiMDBhNzNiOSIsImV4cCI6MTgyMDE4NDQyMH0.cqFblPB-6RZr3t5KEffGzdu1E29QvsVaP45QZ_FrRrY';
+  const token = process.env.CARTO_TOKEN;
   const apiBaseUrl =
     process.env.CARTO_API_BASE_URL ||
     process.env.VITE_CARTO_API_BASE_URL ||
     'https://gcp-us-east1.api.carto.com';
+
+  if (!token) {
+    return res.status(503).json({
+      success: false,
+      authenticated: false,
+      configured: false,
+      apiBaseUrl,
+      error: 'CARTO integration is not configured',
+    });
+  }
 
   const startTime = Date.now();
   try {
@@ -288,13 +291,13 @@ app.get('/api/carto/status', async (req, res) => {
     });
 
     const latencyMs = Date.now() - startTime;
-    const isAuthorized = probeResponse.status !== 401 && probeResponse.status !== 403;
+    const isAuthorized = probeResponse.ok;
 
     res.json({
       success: true,
       apiBaseUrl,
       region: 'gcp-us-east1',
-      account: 'ac_sp4wv3nz',
+      account: process.env.CARTO_ACCOUNT_ID || null,
       statusCode: probeResponse.status,
       authenticated: isAuthorized,
       latencyMs,
@@ -318,11 +321,13 @@ app.post('/api/ai/analyze-data', async (req, res) => {
     const client = getGeminiClient();
 
     if (!client) {
-      // Fallback deterministic analysis if no API key is provided
+      // Demonstration-only response while the AI service is not configured
       return res.json({
         success: true,
-        source: 'local_heuristic_engine',
-        title: 'Agricultural Value Chain Diagnostic Briefing',
+        source: 'demonstration_dataset',
+        dataStatus: 'demonstration',
+        disclaimer: 'Illustrative analysis generated from fictitious demonstration data. It is not an official AVDP finding.',
+        title: 'Demonstration Agricultural Value Chain Briefing',
         summary: `Analysis of Sierra Leone AVCDP project data across 16 operational districts reveals significant productivity gains in inland valley swamp (IVS) rice and mechanized cassava processing, alongside logistics bottlenecks in eastern cocoa hubs.`,
         keyFindings: [
           'Rice yields in Bo and Kenema IVS clusters reached 3.8 MT/Ha, outperforming traditional upland cultivation by 48%.',
@@ -338,9 +343,9 @@ app.post('/api/ai/analyze-data', async (req, res) => {
       });
     }
 
-    const prompt = `You are a Senior Monitoring & Evaluation (M&E) and Agricultural Value Chain Specialist for the Sierra Leone Agriculture Value Chain Development Project (AVCDP), funded by the Government of Sierra Leone, IFAD, and the African Development Bank.
+    const prompt = `You are a Monitoring & Evaluation and agricultural value-chain analyst for the Sierra Leone Agriculture Value Chain Development Project (AVDP).
 Context:
-${context || 'General AVCDP project review across Rice, Cassava, Cocoa, Oil Palm, Livestock, and Fish value chains in 16 districts.'}
+${context || 'General AVDP project review across Rice, Cassava, Cocoa, Oil Palm, Livestock, and Fish value chains in 16 districts.'}
 
 Dataset Summary:
 ${JSON.stringify(datasetSummary, null, 2)}
@@ -376,7 +381,7 @@ Please return a JSON response with the following format:
     console.error('Gemini error:', err);
     res.status(500).json({
       success: false,
-      error: err.message || 'Error generating insights',
+      error: 'Unable to generate insights at this time',
     });
   }
 });
