@@ -866,6 +866,7 @@ export default function App() {
             canvasState={canvasState}
             datasets={filteredDatasets}
             selectedDistrict={selectedDistrict}
+            dataSourceMode={dataSourceMode}
             onSelectDistrict={setSelectedDistrict}
             onUpdateCanvas={handleCanvasUpdate}
             activeRemoteWidgetId={activeRemoteWidgetId}
