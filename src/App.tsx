@@ -17,6 +17,10 @@ import {
   ReportingPeriod,
 } from './data/reportingPeriods';
 import { storageService } from './services/storageService';
+import {
+  dashboardDataGateway,
+  DashboardDataMode,
+} from './services/dashboardDataGateway';
 import { collabService } from './services/collabService';
 import { VisualCanvas } from './components/Builder/VisualCanvas';
 import { SierraLeoneMap } from './components/Map/SierraLeoneMap';
@@ -106,6 +110,11 @@ export default function App() {
   // Core app state
   const [canvasState, setCanvasState] = useState<CanvasState>(DEFAULT_CANVAS_CONFIG);
   const [datasets, setDatasets] = useState<Dataset[]>(DEFAULT_DATASETS);
+  const [dataSourceMode, setDataSourceMode] =
+    useState<DashboardDataMode>('demonstration');
+  const [dataSourceLabel, setDataSourceLabel] = useState('Loading dashboard data source…');
+  const [dataSourceLoadedAt, setDataSourceLoadedAt] = useState<string | null>(null);
+  const [dataSourceError, setDataSourceError] = useState<string | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedValueChain, setSelectedValueChain] = useState<ValueChainType>('All Value Chains');
   const [selectedReportingPeriod, setSelectedReportingPeriod] =
@@ -154,8 +163,25 @@ export default function App() {
     if (cachedCanvas) {
       setCanvasState(cachedCanvas);
     }
-    const allDatasets = storageService.getAllDatasets();
-    setDatasets(allDatasets);
+    let isCurrent = true;
+    dashboardDataGateway
+      .load()
+      .then((snapshot) => {
+        if (!isCurrent) return;
+        setDatasets(snapshot.datasets);
+        setDataSourceMode(snapshot.mode);
+        setDataSourceLabel(snapshot.source);
+        setDataSourceLoadedAt(snapshot.loadedAt);
+        setDataSourceError(null);
+      })
+      .catch((error: unknown) => {
+        if (!isCurrent) return;
+        setDatasets([]);
+        setDataSourceMode(dashboardDataGateway.getConfiguredMode());
+        setDataSourceLabel('Dashboard data source unavailable');
+        setDataSourceLoadedAt(null);
+        setDataSourceError(error instanceof Error ? error.message : 'Unable to load dashboard data.');
+      });
 
     setIsSimulatedOffline(storageService.isSimulatedOffline());
     setIsOnline(storageService.isOnline());
@@ -207,6 +233,7 @@ export default function App() {
     });
 
     return () => {
+      isCurrent = false;
       unsubscribeStorage();
       unsubscribeCollab();
       collabService.disconnect();
@@ -657,13 +684,36 @@ export default function App() {
       </header>
 
       {/* Dashboard-wide data provenance notice */}
-      <section className="border-b border-amber-800/60 bg-amber-950/35 px-4 py-2" aria-label="Data status">
-        <div className="max-w-7xl mx-auto flex flex-col gap-1 text-[11px] text-amber-100 sm:flex-row sm:items-center sm:justify-between">
-          <span className="font-semibold">
-            Prototype mode: all figures are fictitious and provided for dashboard testing only.
+      <section
+        className={`border-b px-4 py-2 ${
+          dataSourceError
+            ? 'border-rose-800/70 bg-rose-950/40'
+            : dataSourceMode === 'live'
+              ? 'border-emerald-800/70 bg-emerald-950/40'
+              : 'border-amber-800/60 bg-amber-950/35'
+        }`}
+        aria-label="Dashboard data source status"
+      >
+        <div className="max-w-7xl mx-auto flex flex-col gap-1 text-[11px] sm:flex-row sm:items-center sm:justify-between">
+          <span className={`font-semibold ${
+            dataSourceError
+              ? 'text-rose-200'
+              : dataSourceMode === 'live'
+                ? 'text-emerald-200'
+                : 'text-amber-100'
+          }`}>
+            {dataSourceError
+              ? `Data unavailable: ${dataSourceError}`
+              : dataSourceMode === 'live'
+                ? 'Live mode: validated datasets loaded from the configured AVDP analytical service.'
+                : 'Prototype mode: all figures are fictitious and provided for dashboard testing only.'}
           </span>
-          <span className="text-amber-300">
-            Source: AVDP demonstration datasets • Status: Illustrative • Not for official reporting
+          <span className={dataSourceError ? 'text-rose-300' : 'text-slate-400'}>
+            Source: {dataSourceLabel}
+            {dataSourceLoadedAt
+              ? ` • Loaded ${new Date(dataSourceLoadedAt).toLocaleString()}`
+              : ''}
+            {dataSourceMode === 'demonstration' ? ' • Not for official reporting' : ''}
           </span>
         </div>
       </section>
