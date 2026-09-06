@@ -20,7 +20,7 @@ interface LiveDatasetResponse {
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === 'string');
 
-const isDataset = (value: unknown): value is Dataset => {
+export const isDataset = (value: unknown): value is Dataset => {
   if (!value || typeof value !== 'object') return false;
   const dataset = value as Partial<Dataset>;
   return (
