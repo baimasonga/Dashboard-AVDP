@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { CanvasState, Dataset, DistrictMetric } from '../../types';
-import { SIERRA_LEONE_DISTRICTS, AVDP_ME_LOGFRAME } from '../../data/sierraLeoneData';
+import { CanvasState, Dataset, ValueChainType } from '../../types';
 import {
+  AVDP_ME_LOGFRAME,
+  SIERRA_LEONE_DISTRICTS,
+} from '../../data/sierraLeoneData';
+import {
+  Calendar,
   Download,
-  Printer,
   FileSpreadsheet,
   FileText,
   Package,
-  Image as ImageIcon,
-  Check,
+  Printer,
+  ShieldCheck,
   X,
-  Share2,
-  Calendar,
 } from 'lucide-react';
 
 interface ReportingModalProps {
@@ -20,7 +21,40 @@ interface ReportingModalProps {
   canvasState: CanvasState;
   datasets: Dataset[];
   selectedDistrict: string | null;
+  selectedValueChain: ValueChainType;
 }
+
+type ReportType =
+  | 'executive'
+  | 'quarterly'
+  | 'district'
+  | 'value-chain'
+  | 'data-quality';
+
+const REPORT_TYPES: Array<{ id: ReportType; label: string }> = [
+  { id: 'executive', label: 'Executive dashboard brief' },
+  { id: 'quarterly', label: 'Quarterly progress summary' },
+  { id: 'district', label: 'District performance profile' },
+  { id: 'value-chain', label: 'Value-chain performance summary' },
+  { id: 'data-quality', label: 'Data-quality summary' },
+];
+
+const escapeHtml = (value: unknown) =>
+  String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+
+const downloadBlob = (content: string, type: string, filename: string) => {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+};
 
 export const ReportingModal: React.FC<ReportingModalProps> = ({
   isOpen,
@@ -28,204 +62,360 @@ export const ReportingModal: React.FC<ReportingModalProps> = ({
   canvasState,
   datasets,
   selectedDistrict,
+  selectedValueChain,
 }) => {
+  const [reportType, setReportType] = useState<ReportType>('executive');
   const [reportTitle, setReportTitle] = useState(
-    'Sierra Leone AVDP Operational Progress & M&E Quarterly Report'
+    'Sierra Leone AVDP Demonstration Performance Report'
   );
-  const [reportingPeriod, setReportingPeriod] = useState('Q3 2024 / Harvest Season');
-  const [includeMELogframe, setIncludeMELogframe] = useState(true);
+  const [reportingPeriod, setReportingPeriod] = useState('2025 Q3');
+  const [includeLogframe, setIncludeLogframe] = useState(true);
   const [includeDistricts, setIncludeDistricts] = useState(true);
-  const [includeAIInsights, setIncludeAIInsights] = useState(true);
-  const [isExporting, setIsExporting] = useState(false);
+  const [includeDatasetRegister, setIncludeDatasetRegister] = useState(true);
 
   if (!isOpen) return null;
 
-  const handlePrintReport = () => {
-    window.print();
-  };
+  const scopedDistricts = selectedDistrict
+    ? SIERRA_LEONE_DISTRICTS.filter(
+        (district) => district.name === selectedDistrict
+      )
+    : selectedValueChain === 'All Value Chains'
+    ? SIERRA_LEONE_DISTRICTS
+    : SIERRA_LEONE_DISTRICTS.filter((district) =>
+        district.primaryValueChains.includes(selectedValueChain)
+      );
 
-  const handleExportJSON = () => {
-    const backupPackage = {
-      project: 'Sierra Leone Agriculture Value Chain Development Project (AVDP)',
-      exportTimestamp: new Date().toISOString(),
-      reportingPeriod,
-      canvasState,
-      customDatasets: datasets.filter((d) => d.isCustom),
-      districtsSummary: SIERRA_LEONE_DISTRICTS,
-      meLogframe: AVDP_ME_LOGFRAME,
+  const scopedIndicators = AVDP_ME_LOGFRAME.filter(
+    (indicator) =>
+      selectedValueChain === 'All Value Chains' ||
+      indicator.valueChain === 'All Value Chains' ||
+      indicator.valueChain === selectedValueChain
+  );
+
+  const scopeLabel = [
+    selectedDistrict || 'All applicable districts',
+    selectedValueChain,
+  ].join(' • ');
+
+  const handleExportJson = () => {
+    const reportPackage = {
+      metadata: {
+        project: 'Sierra Leone Agriculture Value Chain Development Project (AVDP)',
+        reportTitle,
+        reportType,
+        reportingPeriod,
+        geographicScope: selectedDistrict || 'All applicable districts',
+        valueChainScope: selectedValueChain,
+        generatedAt: new Date().toISOString(),
+        dataStatus: 'demonstration',
+        disclaimer:
+          'Fictitious prototype information. Not approved for official reporting.',
+      },
+      sections: {
+        canvas: canvasState,
+        datasets: includeDatasetRegister ? datasets : undefined,
+        districts: includeDistricts ? scopedDistricts : undefined,
+        logframe: includeLogframe ? scopedIndicators : undefined,
+      },
     };
 
-    const blob = new Blob([JSON.stringify(backupPackage, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `AVDP_Full_Workspace_Package_${Date.now()}.json`;
-    a.click();
+    downloadBlob(
+      JSON.stringify(reportPackage, null, 2),
+      'application/json',
+      `avdp_demo_${reportType}_${Date.now()}.json`
+    );
   };
 
-  const handleExportConsolidatedCSV = () => {
-    // Generate multi-district consolidated report CSV
+  const handleExportCsv = () => {
     const headers =
-      'District,Province,Beneficiary_Households,FBO_Count,Rice_Yield_MT_Ha,Cassava_Yield_MT_Ha,ME_Completion_Rate,Active_Processing_Mills,Primary_Value_Chains\n';
-    const rows = SIERRA_LEONE_DISTRICTS.map((d) =>
-      `"${d.name}","${d.province}",${d.beneficiaryHouseholds},${d.fboCount},${d.riceYieldMTPerHa},${d.cassavaYieldMTPerHa},${d.meCompletionRate},${d.activeProcessingMills},"${d.primaryValueChains.join('; ')}"`
-    ).join('\n');
+      'Reporting_Period,District,Province,Value_Chain_Filter,Beneficiary_Households,FBO_Count,Rice_Yield_MT_Ha,Cassava_Yield_MT_Ha,Cocoa_Production_MT,Oil_Palm_Output_MT,ME_Completion_Pct,Feeder_Roads_Km,Processing_Facilities,Data_Status\n';
+    const rows = scopedDistricts
+      .map((district) =>
+        [
+          reportingPeriod,
+          district.name,
+          district.province,
+          selectedValueChain,
+          district.beneficiaryHouseholds,
+          district.fboCount,
+          district.riceYieldMTPerHa,
+          district.cassavaYieldMTPerHa,
+          district.cocoaProductionMT,
+          district.oilPalmYieldMT,
+          district.meCompletionRate,
+          district.feederRoadsRehabKm,
+          district.activeProcessingMills,
+          'Demonstration',
+        ]
+          .map((value) => `"${String(value).replaceAll('"', '""')}"`)
+          .join(',')
+      )
+      .join('\n');
 
-    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'sierra_leone_avdp_all_districts_consolidated.csv';
-    a.click();
+    downloadBlob(
+      headers + rows,
+      'text/csv;charset=utf-8;',
+      `avdp_demo_district_summary_${reportingPeriod
+        .toLowerCase()
+        .replaceAll(' ', '-')}.csv`
+    );
+  };
+
+  const handlePrintReport = () => {
+    const districtRows = includeDistricts
+      ? scopedDistricts
+          .map(
+            (district) => `
+              <tr>
+                <td>${escapeHtml(district.name)}</td>
+                <td>${escapeHtml(district.province)}</td>
+                <td class="number">${district.beneficiaryHouseholds.toLocaleString()}</td>
+                <td class="number">${district.riceYieldMTPerHa.toFixed(1)}</td>
+                <td class="number">${district.cassavaYieldMTPerHa.toFixed(1)}</td>
+                <td class="number">${district.meCompletionRate}%</td>
+              </tr>`
+          )
+          .join('')
+      : '';
+
+    const indicatorRows = includeLogframe
+      ? scopedIndicators
+          .map(
+            (indicator) => `
+              <tr>
+                <td>${escapeHtml(indicator.code)}</td>
+                <td>${escapeHtml(indicator.indicator)}</td>
+                <td>${escapeHtml(indicator.valueChain)}</td>
+                <td class="number">${escapeHtml(indicator.currentActual)} ${escapeHtml(indicator.unit)}</td>
+                <td class="number">${escapeHtml(indicator.finalTarget)} ${escapeHtml(indicator.unit)}</td>
+                <td class="number">${indicator.achievedPct.toFixed(1)}%</td>
+              </tr>`
+          )
+          .join('')
+      : '';
+
+    const datasetRows = includeDatasetRegister
+      ? datasets
+          .map(
+            (dataset) => `
+              <tr>
+                <td>${escapeHtml(dataset.name)}</td>
+                <td>${escapeHtml(dataset.valueChain)}</td>
+                <td class="number">${dataset.rowCount.toLocaleString()}</td>
+                <td>${escapeHtml(dataset.uploadedAt)}</td>
+                <td>Demonstration</td>
+              </tr>`
+          )
+          .join('')
+      : '';
+
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+    if (!printWindow) return;
+
+    printWindow.document.write(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtml(reportTitle)}</title>
+  <style>
+    @page { size: A4; margin: 16mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #172033; font: 12px Arial, sans-serif; }
+    header { border-bottom: 3px solid #16845b; padding-bottom: 14px; }
+    h1 { margin: 0; font-size: 22px; }
+    h2 { margin: 24px 0 8px; color: #126447; font-size: 15px; }
+    .subtitle { margin-top: 6px; color: #526176; }
+    .warning { margin: 16px 0; border: 1px solid #d69b2d; background: #fff8e5; padding: 10px; font-weight: bold; color: #815b11; }
+    .meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 16px 0; }
+    .meta div { border: 1px solid #d9e0e8; padding: 8px; }
+    .label { color: #667085; display: block; font-size: 10px; margin-bottom: 3px; text-transform: uppercase; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border: 1px solid #d9e0e8; padding: 6px; text-align: left; vertical-align: top; }
+    th { background: #eef7f3; color: #126447; font-size: 10px; text-transform: uppercase; }
+    .number { text-align: right; white-space: nowrap; }
+    footer { margin-top: 24px; border-top: 1px solid #d9e0e8; padding-top: 8px; color: #667085; font-size: 10px; }
+    @media print { .no-print { display: none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>${escapeHtml(reportTitle)}</h1>
+    <div class="subtitle">Sierra Leone Agriculture Value Chain Development Project (AVDP)</div>
+  </header>
+  <div class="warning">DEMONSTRATION DATA — Fictitious prototype information. Not approved for official reporting.</div>
+  <section class="meta">
+    <div><span class="label">Report type</span>${escapeHtml(REPORT_TYPES.find((type) => type.id === reportType)?.label)}</div>
+    <div><span class="label">Reporting period</span>${escapeHtml(reportingPeriod)}</div>
+    <div><span class="label">Dashboard scope</span>${escapeHtml(scopeLabel)}</div>
+    <div><span class="label">Generated</span>${escapeHtml(new Date().toLocaleString())}</div>
+  </section>
+  <h2>Executive context</h2>
+  <p>This report reflects the active dashboard filters. It contains ${canvasState.widgets.length} configured infographic widgets, ${datasets.length} datasets in scope, ${scopedDistricts.length} applicable districts and ${scopedIndicators.length} logframe indicators.</p>
+  ${
+    includeDistricts
+      ? `<h2>District performance summary</h2>
+         <table><thead><tr><th>District</th><th>Province</th><th>Beneficiary households</th><th>Rice yield MT/ha</th><th>Cassava yield MT/ha</th><th>M&E completion</th></tr></thead><tbody>${districtRows}</tbody></table>`
+      : ''
+  }
+  ${
+    includeLogframe
+      ? `<h2>M&E logframe summary</h2>
+         <table><thead><tr><th>Code</th><th>Indicator</th><th>Value chain</th><th>Demo actual</th><th>Final target</th><th>Achievement</th></tr></thead><tbody>${indicatorRows}</tbody></table>`
+      : ''
+  }
+  ${
+    includeDatasetRegister
+      ? `<h2>Dataset register</h2>
+         <table><thead><tr><th>Dataset</th><th>Value chain</th><th>Rows</th><th>Snapshot date</th><th>Status</th></tr></thead><tbody>${datasetRows}</tbody></table>`
+      : ''
+  }
+  <footer>Source: AVDP demonstration datasets • Reporting period: ${escapeHtml(reportingPeriod)} • Status: Demonstration</footer>
+  <script>window.addEventListener('load', () => window.print());<\/script>
+</body>
+</html>`);
+    printWindow.document.close();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-950 border border-emerald-800/80 flex items-center justify-center text-emerald-400">
-              <Download className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-white">Generate Official AVDP Project Report</h3>
-              <p className="text-xs text-slate-400">
-                Multi-format export engine for government, donor, and decentralized field reporting
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Form Body */}
-        <div className="p-6 overflow-y-auto space-y-5 flex-1">
-          {/* Metadata */}
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Report Title
-              </label>
-              <input
-                type="text"
-                value={reportTitle}
-                onChange={(e) => setReportTitle(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Reporting Period / Season
-                </label>
-                <input
-                  type="text"
-                  value={reportingPeriod}
-                  onChange={(e) => setReportingPeriod(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Geographic Scope
-                </label>
-                <div className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-300">
-                  {selectedDistrict ? `${selectedDistrict} District (Filtered)` : 'All 16 National Districts'}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Export Formats Grid */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+      <div
+        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="report-dialog-title"
+      >
+        <header className="flex items-start justify-between border-b border-slate-800 px-6 py-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-2">
-              Choose Export Option
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Print / PDF */}
-              <button
-                onClick={handlePrintReport}
-                className="p-4 rounded-xl border border-slate-700 bg-slate-800/60 hover:bg-slate-800 hover:border-emerald-500 transition-all text-left group"
-              >
-                <div className="w-8 h-8 rounded-lg bg-emerald-950 border border-emerald-800 flex items-center justify-center text-emerald-400 mb-2 group-hover:scale-105 transition-transform">
-                  <Printer className="w-4 h-4" />
-                </div>
-                <div className="text-xs font-bold text-white mb-0.5">Print / PDF Brief</div>
-                <div className="text-[10px] text-slate-400 leading-tight">
-                  Ready-to-print executive memo with charts &amp; M&amp;E tables
-                </div>
-              </button>
+            <h2 id="report-dialog-title" className="flex items-center gap-2 text-base font-bold text-white">
+              <FileText className="h-5 w-5 text-emerald-400" />
+              Generate AVDP Demonstration Report
+            </h2>
+            <p className="mt-1 text-xs text-slate-400">
+              Filter-aware management outputs with explicit scope and provenance.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close report generator"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </header>
 
-              {/* Consolidated CSV */}
-              <button
-                onClick={handleExportConsolidatedCSV}
-                className="p-4 rounded-xl border border-slate-700 bg-slate-800/60 hover:bg-slate-800 hover:border-amber-500 transition-all text-left group"
-              >
-                <div className="w-8 h-8 rounded-lg bg-amber-950 border border-amber-800 flex items-center justify-center text-amber-400 mb-2 group-hover:scale-105 transition-transform">
-                  <FileSpreadsheet className="w-4 h-4" />
-                </div>
-                <div className="text-xs font-bold text-white mb-0.5">Consolidated CSV</div>
-                <div className="text-[10px] text-slate-400 leading-tight">
-                  Spreadsheet of all 16 districts, yield metrics, and mills
-                </div>
-              </button>
-
-              {/* JSON Package */}
-              <button
-                onClick={handleExportJSON}
-                className="p-4 rounded-xl border border-slate-700 bg-slate-800/60 hover:bg-slate-800 hover:border-sky-500 transition-all text-left group"
-              >
-                <div className="w-8 h-8 rounded-lg bg-sky-950 border border-sky-800 flex items-center justify-center text-sky-400 mb-2 group-hover:scale-105 transition-transform">
-                  <Package className="w-4 h-4" />
-                </div>
-                <div className="text-xs font-bold text-white mb-0.5">Project Bundle (JSON)</div>
-                <div className="text-[10px] text-slate-400 leading-tight">
-                  Full canvas layout, custom datasets, and sync state
-                </div>
-              </button>
-            </div>
+        <div className="flex-1 space-y-5 overflow-y-auto p-6">
+          <div className="rounded-xl border border-amber-800/60 bg-amber-950/30 p-3 text-xs text-amber-200">
+            <strong>Demonstration output:</strong> all exported figures are fictitious and not approved for official AVDP reporting.
           </div>
 
-          {/* Printable Preview Summary */}
-          <div className="bg-slate-800/50 border border-slate-800 rounded-xl p-4 space-y-2 text-xs text-slate-300">
-            <div className="font-bold text-white flex items-center justify-between">
-              <span>Report Contents Summary:</span>
-              <span className="text-[10px] text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800/60">
-                Validated
-              </span>
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="text-xs font-semibold text-slate-300">
+              Report type
+              <select
+                value={reportType}
+                onChange={(event) => setReportType(event.target.value as ReportType)}
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white outline-none focus:border-emerald-500"
+              >
+                {REPORT_TYPES.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="text-xs font-semibold text-slate-300">
+              Reporting period
+              <select
+                value={reportingPeriod}
+                onChange={(event) => setReportingPeriod(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white outline-none focus:border-emerald-500"
+              >
+                {['2023 Annual', '2024 Annual', '2025 Q2', '2025 Q3'].map((period) => (
+                  <option key={period}>{period}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <label className="block text-xs font-semibold text-slate-300">
+            Report title
+            <input
+              value={reportTitle}
+              onChange={(event) => setReportTitle(event.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white outline-none focus:border-emerald-500"
+            />
+          </label>
+
+          <section className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
+            <div className="flex items-center gap-2 text-xs font-bold text-white">
+              <Calendar className="h-4 w-4 text-sky-400" />
+              Active report scope
             </div>
-            <ul className="space-y-1 text-slate-400 list-disc list-inside text-[11px]">
-              <li>Executive dashboard with {canvasState.widgets.length} infographic chart widgets</li>
-              <li>Interactive Sierra Leone 16-district choropleth and value chain mapping</li>
-              <li>M&E Logframe Matrix ({AVDP_ME_LOGFRAME.length} national impact indicators)</li>
-              <li>Rice, Cassava, Cocoa, and Oil Palm yield benchmarks</li>
-            </ul>
+            <dl className="mt-3 grid gap-3 text-xs sm:grid-cols-3">
+              <div><dt className="text-slate-500">Geography</dt><dd className="mt-1 font-semibold text-slate-200">{selectedDistrict || 'All applicable districts'}</dd></div>
+              <div><dt className="text-slate-500">Value chain</dt><dd className="mt-1 font-semibold text-slate-200">{selectedValueChain}</dd></div>
+              <div><dt className="text-slate-500">Datasets</dt><dd className="mt-1 font-semibold text-slate-200">{datasets.length} in scope</dd></div>
+            </dl>
+          </section>
+
+          <fieldset>
+            <legend className="text-xs font-semibold text-slate-300">Report sections</legend>
+            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              {[
+                ['District summary', includeDistricts, setIncludeDistricts],
+                ['M&E logframe', includeLogframe, setIncludeLogframe],
+                ['Dataset register', includeDatasetRegister, setIncludeDatasetRegister],
+              ].map(([label, checked, setter]) => (
+                <label key={String(label)} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/60 p-3 text-xs text-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(checked)}
+                    onChange={(event) =>
+                      (setter as React.Dispatch<React.SetStateAction<boolean>>)(event.target.checked)
+                    }
+                    className="accent-emerald-500"
+                  />
+                  {String(label)}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <button type="button" onClick={handlePrintReport} className="rounded-xl border border-emerald-800 bg-emerald-950/50 p-4 text-left transition-colors hover:bg-emerald-950">
+              <Printer className="h-5 w-5 text-emerald-400" />
+              <div className="mt-2 text-xs font-bold text-white">Print-ready report</div>
+              <div className="mt-1 text-[10px] text-slate-400">Structured A4 HTML for printing or PDF</div>
+            </button>
+            <button type="button" onClick={handleExportCsv} className="rounded-xl border border-amber-800 bg-amber-950/40 p-4 text-left transition-colors hover:bg-amber-950">
+              <FileSpreadsheet className="h-5 w-5 text-amber-400" />
+              <div className="mt-2 text-xs font-bold text-white">District CSV</div>
+              <div className="mt-1 text-[10px] text-slate-400">Filtered analytical district extract</div>
+            </button>
+            <button type="button" onClick={handleExportJson} className="rounded-xl border border-sky-800 bg-sky-950/40 p-4 text-left transition-colors hover:bg-sky-950">
+              <Package className="h-5 w-5 text-sky-400" />
+              <div className="mt-2 text-xs font-bold text-white">Report data package</div>
+              <div className="mt-1 text-[10px] text-slate-400">Structured JSON with provenance</div>
+            </button>
+          </div>
+
+          <div className="flex items-start gap-2 rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-[11px] leading-5 text-slate-400">
+            <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400" />
+            Exports include the reporting period, active filters, generation time, data status and demonstration disclaimer.
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-slate-900">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-          >
+        <footer className="flex items-center justify-between border-t border-slate-800 px-6 py-4">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white">
             Close
           </button>
-          <button
-            onClick={handlePrintReport}
-            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Open Printable Version</span>
+          <button type="button" onClick={handlePrintReport} className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-bold text-slate-950 hover:bg-emerald-400">
+            <Download className="h-4 w-4" />
+            Generate report
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );
