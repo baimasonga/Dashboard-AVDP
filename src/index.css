@@ -82,3 +82,24 @@
   color: #10b981 !important;
   text-decoration: none;
 }
+
+/* Keyboard and motion accessibility */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 3px;
+}
+
+#dashboard-main:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
