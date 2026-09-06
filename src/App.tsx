@@ -569,11 +569,10 @@ export default function App() {
 
         {/* AVDP Comprehensive Component Navigation Strip */}
         <div className="bg-slate-950/90 border-t border-slate-800/90 px-4 sm:px-6 lg:px-8 py-2">
-          <div role="tablist" aria-label="Dashboard analytical views" className="max-w-7xl mx-auto flex items-center gap-1.5 overflow-x-auto scrollbar-thin pb-0.5 text-xs">
+          <div role="navigation" aria-label="Dashboard analytical views" className="max-w-7xl mx-auto flex items-center gap-1.5 overflow-x-auto scrollbar-thin pb-0.5 text-xs">
             <button
               id="tab-dashboard"
-              role="tab"
-              aria-selected={activeTab === 'dashboard'}
+              aria-pressed={activeTab === 'dashboard'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('dashboard')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -587,8 +586,7 @@ export default function App() {
             </button>
             <button
               id="tab-data-quality"
-              role="tab"
-              aria-selected={activeTab === 'data_quality'}
+              aria-pressed={activeTab === 'data_quality'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('data_quality')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -602,8 +600,7 @@ export default function App() {
             </button>
             <button
               id="tab-data-refresh"
-              role="tab"
-              aria-selected={activeTab === 'data_refresh'}
+              aria-pressed={activeTab === 'data_refresh'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('data_refresh')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -617,8 +614,7 @@ export default function App() {
             </button>
             <button
               id="tab-map"
-              role="tab"
-              aria-selected={activeTab === 'map'}
+              aria-pressed={activeTab === 'map'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('map')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -632,8 +628,7 @@ export default function App() {
             </button>
             <button
               id="tab-district-profile"
-              role="tab"
-              aria-selected={activeTab === 'district_profile'}
+              aria-pressed={activeTab === 'district_profile'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('district_profile')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -647,8 +642,7 @@ export default function App() {
             </button>
             <button
               id="tab-value-chains"
-              role="tab"
-              aria-selected={activeTab === 'value_chains'}
+              aria-pressed={activeTab === 'value_chains'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('value_chains')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -662,8 +656,7 @@ export default function App() {
             </button>
             <button
               id="tab-yield-outlook"
-              role="tab"
-              aria-selected={activeTab === 'yield_outlook'}
+              aria-pressed={activeTab === 'yield_outlook'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('yield_outlook')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -677,8 +670,7 @@ export default function App() {
             </button>
             <button
               id="tab-yield-studies"
-              role="tab"
-              aria-selected={activeTab === 'yield_studies'}
+              aria-pressed={activeTab === 'yield_studies'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('yield_studies')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -692,8 +684,7 @@ export default function App() {
             </button>
             <button
               id="tab-ffs"
-              role="tab"
-              aria-selected={activeTab === 'ffs'}
+              aria-pressed={activeTab === 'ffs'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('ffs')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -707,8 +698,7 @@ export default function App() {
             </button>
             <button
               id="tab-financial"
-              role="tab"
-              aria-selected={activeTab === 'financial'}
+              aria-pressed={activeTab === 'financial'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('financial')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -722,8 +712,7 @@ export default function App() {
             </button>
             <button
               id="tab-procurement"
-              role="tab"
-              aria-selected={activeTab === 'procurement'}
+              aria-pressed={activeTab === 'procurement'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('procurement')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -737,8 +726,7 @@ export default function App() {
             </button>
             <button
               id="tab-agribusiness"
-              role="tab"
-              aria-selected={activeTab === 'agribusiness'}
+              aria-pressed={activeTab === 'agribusiness'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('agribusiness')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -752,8 +740,7 @@ export default function App() {
             </button>
             <button
               id="tab-infrastructure"
-              role="tab"
-              aria-selected={activeTab === 'infrastructure'}
+              aria-pressed={activeTab === 'infrastructure'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('infrastructure')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -767,8 +754,7 @@ export default function App() {
             </button>
             <button
               id="tab-gals"
-              role="tab"
-              aria-selected={activeTab === 'gals'}
+              aria-pressed={activeTab === 'gals'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('gals')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -782,8 +768,7 @@ export default function App() {
             </button>
             <button
               id="tab-grm"
-              role="tab"
-              aria-selected={activeTab === 'grm'}
+              aria-pressed={activeTab === 'grm'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('grm')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -797,8 +782,7 @@ export default function App() {
             </button>
             <button
               id="tab-climate"
-              role="tab"
-              aria-selected={activeTab === 'climate_smart'}
+              aria-pressed={activeTab === 'climate_smart'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('climate_smart')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
@@ -812,8 +796,7 @@ export default function App() {
             </button>
             <button
               id="tab-me"
-              role="tab"
-              aria-selected={activeTab === 'me_logframe'}
+              aria-pressed={activeTab === 'me_logframe'}
               aria-controls="dashboard-main"
               onClick={() => setActiveTab('me_logframe')}
               className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
