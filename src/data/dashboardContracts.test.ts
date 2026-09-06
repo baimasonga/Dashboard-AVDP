@@ -9,6 +9,7 @@ import {
   getDemonstrationDatasetMetadata,
 } from './reportingPeriods';
 import { isDataset } from '../services/dashboardDataGateway';
+import { INDICATOR_CATALOG } from './indicatorCatalog';
 
 const districts = ['Bo', 'Kenema', 'Kailahun'];
 
@@ -128,4 +129,19 @@ test('live dataset contract rejects unsupported verification labels', () => {
     isDataset({ ...validDataset, verificationStatus: 'Official enough' }),
     false
   );
+});
+
+test('every indicator exposes the complete governance contract', () => {
+  assert.ok(INDICATOR_CATALOG.length > 0);
+  for (const indicator of INDICATOR_CATALOG) {
+    assert.ok(indicator.code);
+    assert.ok(indicator.definition);
+    assert.ok(indicator.formula);
+    assert.ok(indicator.unit);
+    assert.ok(indicator.frequency);
+    assert.ok(indicator.responsibleUnit);
+    assert.ok(indicator.lastReportingPeriod);
+    assert.ok(indicator.dataQualityStatus);
+    assert.ok(Array.isArray(indicator.disaggregation));
+  }
 });
