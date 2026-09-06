@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CanvasState, Dataset, ValueChainType } from '../../types';
+import { ReportingPeriod } from '../../data/reportingPeriods';
 import {
   AVDP_ME_LOGFRAME,
   SIERRA_LEONE_DISTRICTS,
@@ -22,6 +23,7 @@ interface ReportingModalProps {
   datasets: Dataset[];
   selectedDistrict: string | null;
   selectedValueChain: ValueChainType;
+  selectedReportingPeriod: ReportingPeriod;
 }
 
 type ReportType =
@@ -63,12 +65,13 @@ export const ReportingModal: React.FC<ReportingModalProps> = ({
   datasets,
   selectedDistrict,
   selectedValueChain,
+  selectedReportingPeriod,
 }) => {
   const [reportType, setReportType] = useState<ReportType>('executive');
   const [reportTitle, setReportTitle] = useState(
     'Sierra Leone AVDP Demonstration Performance Report'
   );
-  const [reportingPeriod, setReportingPeriod] = useState('2025 Q3');
+  const reportingPeriod = selectedReportingPeriod;
   const [includeLogframe, setIncludeLogframe] = useState(true);
   const [includeDistricts, setIncludeDistricts] = useState(true);
   const [includeDatasetRegister, setIncludeDatasetRegister] = useState(true);
@@ -329,13 +332,14 @@ export const ReportingModal: React.FC<ReportingModalProps> = ({
               Reporting period
               <select
                 value={reportingPeriod}
-                onChange={(event) => setReportingPeriod(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white outline-none focus:border-emerald-500"
+                disabled
+                className="mt-1 w-full cursor-not-allowed rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-300"
               >
-                {['2023 Annual', '2024 Annual', '2025 Q2', '2025 Q3'].map((period) => (
-                  <option key={period}>{period}</option>
-                ))}
+                <option>{reportingPeriod}</option>
               </select>
+              <span className="mt-1 block text-[10px] font-normal text-slate-500">
+                Controlled by the global dashboard filter.
+              </span>
             </label>
           </div>
 
