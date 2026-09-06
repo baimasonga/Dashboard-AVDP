@@ -35,6 +35,7 @@ import { CollabDrawer } from './components/Collab/CollabDrawer';
 import { TemplatePickerModal } from './components/Templates/TemplatePickerModal';
 import { DataCleaningModal } from './components/Cleaner/DataCleaningModal';
 import { DashboardFilterBar } from './components/Common/DashboardFilterBar';
+import { IndicatorCatalogModal } from './components/Common/IndicatorCatalogModal';
 import {
   RicePaddyIcon,
   CassavaTuberIcon,
@@ -124,6 +125,7 @@ export default function App() {
   const [isCollabDrawerOpen, setIsCollabDrawerOpen] = useState<boolean>(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
   const [isDataCleaningModalOpen, setIsDataCleaningModalOpen] = useState<boolean>(false);
+  const [isIndicatorCatalogOpen, setIsIndicatorCatalogOpen] = useState<boolean>(false);
   const [activeCleaningDatasetId, setActiveCleaningDatasetId] = useState<string>('ds_district_matrix');
 
   // Collaboration State
@@ -308,6 +310,17 @@ export default function App() {
 
           {/* Action Bar (Templates, CSV Import, Data Cleaning, AI Insights, Export, Collab, Sync) */}
           <div className="flex items-center gap-2">
+            {/* Indicator catalogue and data provenance */}
+            <button
+              id="btn-indicator-catalog"
+              onClick={() => setIsIndicatorCatalogOpen(true)}
+              className="px-2.5 py-1.5 bg-sky-950/70 hover:bg-sky-900 text-sky-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-sky-800/80"
+              title="Open indicator definitions, formulas and data source provenance"
+            >
+              <Database className="w-3.5 h-3.5 text-sky-400" />
+              <span className="hidden sm:inline">Indicators</span>
+            </button>
+
             {/* Infographic Templates */}
             <button
               id="btn-templates"
@@ -736,6 +749,12 @@ export default function App() {
       </footer>
 
       {/* Modals & Drawers */}
+      <IndicatorCatalogModal
+        isOpen={isIndicatorCatalogOpen}
+        onClose={() => setIsIndicatorCatalogOpen(false)}
+      />
+
+
       <CsvImportModal
         isOpen={isCsvModalOpen}
         onClose={() => setIsCsvModalOpen(false)}
