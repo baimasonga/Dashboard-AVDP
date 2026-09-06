@@ -52,6 +52,11 @@ Every production dataset and published visual should identify:
 
 Raw imports should be retained. Suggested cleaning actions must not silently alter official source data.
 
+The assisted-validation interface flags missing values, duplicates, invalid districts,
+format problems and possible outliers without imputing, capping or deleting records.
+Analysts may approve documented corrections to a reviewed copy; the original uploaded
+rows remain attached to the dataset for recovery.
+
 ## Configuration
 
 - `CARTO_TOKEN`: optional server-side CARTO API credential.
