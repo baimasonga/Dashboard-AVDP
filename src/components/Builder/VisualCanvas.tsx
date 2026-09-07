@@ -319,13 +319,13 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
               <div className="h-full overflow-hidden rounded-xl">
                 <ChartErrorBoundary
                   chartTitle={widget.title}
-                  resetKey={[
-                    widget.id,
-                    widget.datasetId || '',
-                    selectedDistrict || '',
-                    ds?.rowCount || 0,
+                  resetKeys={[
+                    widget,
+                    ds?.rows,
+                    ds?.uploadedAt,
+                    selectedDistrict,
                     canvasState.version,
-                  ].join(':')}
+                  ]}
                 >
                   <ChartRenderer
                     widget={widget}
