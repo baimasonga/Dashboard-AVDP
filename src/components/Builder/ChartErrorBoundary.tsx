@@ -4,7 +4,7 @@ import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface ChartErrorBoundaryProps {
   chartTitle: string;
-  resetKey: string;
+  resetKeys: readonly unknown[];
   children: ReactNode;
 }
 
@@ -33,10 +33,13 @@ export class ChartErrorBoundary extends React.Component<
   }
 
   public componentDidUpdate(previousProps: ChartErrorBoundaryProps) {
-    if (
-      this.state.hasError &&
-      previousProps.resetKey !== this.props.resetKey
-    ) {
+    const inputsChanged =
+      previousProps.resetKeys.length !== this.props.resetKeys.length ||
+      previousProps.resetKeys.some(
+        (value, index) => !Object.is(value, this.props.resetKeys[index])
+      );
+
+    if (this.state.hasError && inputsChanged) {
       this.setState({ hasError: false });
     }
   }
