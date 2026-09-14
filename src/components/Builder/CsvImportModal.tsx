@@ -2,6 +2,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import Papa from 'papaparse';
 import { Dataset, ValueChainType } from '../../types';
 import { storageService } from '../../services/storageService';
+import { AVDP_RECONCILED_Q3_2025_CSV } from '../../data/avdpOfficialDataset';
 import {
   DataCleaningService,
   ValidationReport,
@@ -19,6 +20,7 @@ import {
   ArrowRight,
   Sparkles,
   SlidersHorizontal,
+  Download,
 } from 'lucide-react';
 
 interface CsvImportModalProps {
@@ -152,9 +154,14 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
     onClose();
   };
 
-  const loadSampleCSV = (type: 'rice' | 'cassava' | 'mechanization' | 'unclean_survey') => {
+  const loadSampleCSV = (type: 'official' | 'rice' | 'cassava' | 'mechanization' | 'unclean_survey') => {
     let sampleCSV = '';
-    if (type === 'rice') {
+    let fileName = `avdp_${type}_data.csv`;
+
+    if (type === 'official') {
+      sampleCSV = AVDP_RECONCILED_Q3_2025_CSV;
+      fileName = 'avdp_reconciled_q3_2025_16_districts.csv';
+    } else if (type === 'rice') {
       sampleCSV = `District,IVS_Yield_MT_Ha,Upland_Yield_MT_Ha,Certified_Seed_MT,FBO_Membership,Fertilizer_Bags,Post_Harvest_Loss_Pct
 Bo,4.1,2.1,380,1850,2400,12
 Kenema,3.9,1.9,340,1620,2100,14
@@ -193,8 +200,18 @@ Kambia District,Gbalamuya,4.0,"1,250",94`;
     }
 
     const blob = new Blob([sampleCSV], { type: 'text/csv' });
-    const file = new File([blob], `avcdp_${type}_field_data.csv`, { type: 'text/csv' });
+    const file = new File([blob], fileName, { type: 'text/csv' });
     handleFileProcess(file);
+  };
+
+  const handleDownloadOfficialCSV = () => {
+    const blob = new Blob([AVDP_RECONCILED_Q3_2025_CSV], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'avdp_reconciled_q3_2025_16_districts.csv';
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -224,34 +241,56 @@ Kambia District,Gbalamuya,4.0,"1,250",94`;
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto space-y-5 flex-1">
           {/* Quick Sample Presets */}
-          <div className="flex items-center justify-between p-3 bg-slate-800/50 border border-slate-800 rounded-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-slate-800/50 border border-slate-800 rounded-xl gap-3">
             <div className="text-xs text-slate-300 flex items-center gap-2">
-              <Database className="w-4 h-4 text-amber-400" />
-              <span>Need test data? Load AVDP field survey template:</span>
+              <Database className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Load prepared AVDP dataset template:</span>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <button
+                type="button"
+                onClick={() => loadSampleCSV('official')}
+                className="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold rounded-md transition-colors flex items-center gap-1.5 shadow-sm"
+                title="Loads verified Q3 2025 performance dataset across all 16 Sierra Leone districts"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>AVDP Official Q3 2025 (16 Districts)</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadOfficialCSV}
+                className="px-2 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md transition-colors flex items-center gap-1"
+                title="Download verified Q3 2025 CSV file to your computer"
+              >
+                <Download className="w-3 h-3" />
+                <span>Download CSV</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => loadSampleCSV('rice')}
-                className="px-2.5 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
+                className="px-2 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
               >
-                Rice Survey
+                Rice
               </button>
               <button
+                type="button"
                 onClick={() => loadSampleCSV('cassava')}
-                className="px-2.5 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
+                className="px-2 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
               >
-                Cassava Mills
+                Cassava
               </button>
               <button
+                type="button"
                 onClick={() => loadSampleCSV('mechanization')}
-                className="px-2.5 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
+                className="px-2 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
               >
-                Agro-Machinery
+                Machinery
               </button>
               <button
+                type="button"
                 onClick={() => loadSampleCSV('unclean_survey')}
-                className="px-2.5 py-1 text-xs bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-800/80 rounded-md transition-colors flex items-center gap-1 font-semibold"
-                title="Loads survey containing typos, missing values, and outliers to test cleaning tools"
+                className="px-2 py-1 text-xs bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-800/80 rounded-md transition-colors flex items-center gap-1 font-semibold"
+                title="Loads survey containing typos, missing values, and outliers to test validation tools"
               >
                 <AlertTriangle className="w-3 h-3 text-amber-400" />
                 <span>Test Survey (With Errors)</span>

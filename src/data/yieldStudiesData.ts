@@ -246,6 +246,22 @@ export const VALUE_CHAINS_YIELD_STUDIES: ValueChainYieldStudy[] = [
         gainPct: 164.5,
         primarySoilLimitation: 'Seasonal deep standing water before bunding',
       },
+      {
+        district: 'Bombali',
+        agroZone: 'Northern Transitional Savannah / Bolilands',
+        controlYield: 1.56,
+        treatmentYield: 3.92,
+        gainPct: 151.3,
+        primarySoilLimitation: 'Low organic phosphorus and seasonal moisture deficits in unbunded swamps',
+      },
+      {
+        district: 'Falaba',
+        agroZone: 'Northern Highlands & Mountain Valleys',
+        controlYield: 1.46,
+        treatmentYield: 3.78,
+        gainPct: 158.9,
+        primarySoilLimitation: 'Cold stream irrigation and mountain slope runoff; remediated with contour perimeter canals',
+      },
     ],
 
     keyFindings: [
@@ -613,6 +629,22 @@ export const VALUE_CHAINS_YIELD_STUDIES: ValueChainYieldStudy[] = [
         gainPct: 112.5,
         primarySoilLimitation: 'Dry spell moisture stress; drought-tolerant TME 419 excelled',
       },
+      {
+        district: 'Bombali',
+        agroZone: 'Northern Transitional Savannah Belt',
+        controlYield: 10.90,
+        treatmentYield: 23.10,
+        gainPct: 111.9,
+        primarySoilLimitation: 'Lateritic crusting on un-ridged plots; overcome with mechanized tractor ridging',
+      },
+      {
+        district: 'Western Urban',
+        agroZone: 'Peninsula Coastal Littoral Belt',
+        controlYield: 10.60,
+        treatmentYield: 22.40,
+        gainPct: 111.3,
+        primarySoilLimitation: 'Coarse sand topsoils responsive to poultry bio-slurry composting',
+      },
     ],
 
     keyFindings: [
@@ -737,6 +769,22 @@ export const VALUE_CHAINS_YIELD_STUDIES: ValueChainYieldStudy[] = [
         treatmentYield: 17.40,
         gainPct: 171.9,
         primarySoilLimitation: 'Intensive continuous cropping; remediated with compost',
+      },
+      {
+        district: 'Falaba',
+        agroZone: 'Northern Plateaux / Highlands',
+        controlYield: 6.60,
+        treatmentYield: 17.70,
+        gainPct: 168.2,
+        primarySoilLimitation: 'Mountain slope erosion during monsoon rains; terracing and mulching applied',
+      },
+      {
+        district: 'Western Urban',
+        agroZone: 'Peninsula Coastal Valley Slopes',
+        controlYield: 6.50,
+        treatmentYield: 17.60,
+        gainPct: 170.8,
+        primarySoilLimitation: 'High urban runoff and soil wash; drip irrigation and shade netting established',
       },
     ],
 

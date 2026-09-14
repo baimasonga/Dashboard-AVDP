@@ -18,6 +18,9 @@ import {
   LayoutGrid,
   LayoutTemplate,
   Wand2,
+  Database,
+  Upload,
+  RotateCcw,
 } from 'lucide-react';
 
 interface VisualCanvasProps {
@@ -31,6 +34,8 @@ interface VisualCanvasProps {
   activeRemoteWidgetId?: string | null;
   onOpenTemplates?: () => void;
   onOpenDataCleaning?: () => void;
+  onOpenImportCsv?: () => void;
+  onResetToDefault?: () => void;
 }
 
 export const VisualCanvas: React.FC<VisualCanvasProps> = ({
@@ -44,6 +49,8 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
   activeRemoteWidgetId,
   onOpenTemplates,
   onOpenDataCleaning,
+  onOpenImportCsv,
+  onResetToDefault,
 }) => {
   const [editingWidget, setEditingWidget] = useState<WidgetConfig | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -120,14 +127,16 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
   };
 
   const handleAddNew = (type: WidgetConfig['type']) => {
-    const defaultDs = datasets[0];
+    const defaultDs =
+      datasets.find((d) => d.id === 'ds_avdp_reconciled_q3_2025') ||
+      datasets[0];
     const newWidget: WidgetConfig = {
       id: 'w-' + Date.now(),
       type,
       title: `New ${type.replace(/_/g, ' ').toUpperCase()}`,
-      datasetId: defaultDs ? defaultDs.id : 'ds_district_matrix',
+      datasetId: defaultDs ? defaultDs.id : 'ds_avdp_reconciled_q3_2025',
       xAxis: defaultDs ? defaultDs.categoricalColumns[0] || defaultDs.columns[0] : 'District',
-      yAxis: defaultDs ? defaultDs.numericColumns[0] || defaultDs.columns[1] : 'Beneficiaries',
+      yAxis: defaultDs ? defaultDs.numericColumns[0] || defaultDs.columns[1] : 'Beneficiary_Households',
       aggregation: 'sum',
       colorScheme: 'emerald',
       colSpan: type === 'kpi_metric' ? 3 : type === 'flow_diagram' ? 12 : 6,
@@ -136,9 +145,35 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
     setIsModalOpen(true);
   };
 
+  // Helper to switch active feeding dataset across all widgets
+  const handleSwitchFeedingDataset = (targetDatasetId: string) => {
+    const targetDs = datasets.find((d) => d.id === targetDatasetId);
+    if (!targetDs) return;
+    const updatedWidgets = widgets.map((w) => ({
+      ...w,
+      datasetId: targetDatasetId,
+    }));
+    onUpdateCanvas({
+      ...canvasState,
+      widgets: updatedWidgets,
+      lastModified: Date.now(),
+      version: canvasState.version + 1,
+    });
+  };
+
+  // Identify active feeding dataset
+  const activeFeedingDataset =
+    datasets.find((d) => d.id === (widgets[0]?.datasetId || 'ds_avdp_reconciled_q3_2025')) ||
+    datasets.find((d) => d.id === 'ds_avdp_reconciled_q3_2025') ||
+    datasets[0];
+
   // Helper for column classes in 12-column grid
   const getColSpanClass = (span: number) => {
     switch (span) {
+      case 1:
+        return 'col-span-12 sm:col-span-6 lg:col-span-1';
+      case 2:
+        return 'col-span-12 sm:col-span-6 lg:col-span-2';
       case 3:
         return 'col-span-12 sm:col-span-6 lg:col-span-3';
       case 4:
@@ -159,6 +194,82 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Dataset Feeding Control Banner */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-900/90 border border-slate-800 rounded-xl shadow-md">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+            <Database className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-slate-300">
+                Feeding Dataset:
+              </span>
+              <span className="text-xs font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-800/60">
+                {activeFeedingDataset?.name || 'AVDP Reconciled Performance (2025 Q3)'}
+              </span>
+              <span className="text-[10px] text-slate-400">
+                ({activeFeedingDataset?.rowCount || 16} districts / records)
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Feeding {widgets.length} visual KPI metrics, choropleth map, and analytics charts
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Quick dataset switcher */}
+          {datasets.length > 1 && (
+            <select
+              aria-label="Select Dataset to Feed Dashboard"
+              value={activeFeedingDataset?.id || ''}
+              onChange={(e) => handleSwitchFeedingDataset(e.target.value)}
+              className="text-xs bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+            >
+              {datasets.map((d) => (
+                <option key={d.id} value={d.id}>
+                  Feed: {d.name.length > 32 ? d.name.substring(0, 30) + '…' : d.name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {activeFeedingDataset?.id !== 'ds_avdp_reconciled_q3_2025' && (
+            <button
+              onClick={() => handleSwitchFeedingDataset('ds_avdp_reconciled_q3_2025')}
+              className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+              title="Feed official Reconciled 2025 Q3 Dataset into all dashboard blocks"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Feed 2025 Q3</span>
+            </button>
+          )}
+
+          {onOpenImportCsv && (
+            <button
+              onClick={onOpenImportCsv}
+              className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700/80 transition-colors flex items-center gap-1.5"
+              title="Upload custom CSV dataset to feed dashboard"
+            >
+              <Upload className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">Feed CSV</span>
+            </button>
+          )}
+
+          {onResetToDefault && (
+            <button
+              onClick={onResetToDefault}
+              className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold rounded-lg border border-slate-700/80 transition-colors flex items-center gap-1.5"
+              title="Restore standard 10 AVDP Master Dashboard blocks"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden md:inline">Reset Dashboard</span>
+            </button>
+          )}
+        </div>
+      </div>
+
       {!readOnly && (
         <>
       {/* Quick Add Widget Bar */}
@@ -166,7 +277,7 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4 text-emerald-400" />
           <span className="text-xs font-bold text-white tracking-wide">
-            Infographic Canvas ({widgets.length} blocks)
+            Dashboard Canvas ({widgets.length} blocks)
           </span>
 
           {onOpenTemplates && (
@@ -192,7 +303,7 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
           )}
 
           <span className="text-[11px] text-slate-400 hidden xl:inline ml-1">
-            • Drag blocks to reorder • Double click to edit
+            • Drag blocks to reorder • Configure metrics anytime
           </span>
         </div>
 
@@ -246,105 +357,142 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
         </>
       )}
 
-      {/* Responsive 12-Column Grid Canvas */}
-      <div className="grid grid-cols-12 gap-4">
-        {widgets.map((widget, index) => {
-          const ds = datasets.find((d) => d.id === widget.datasetId);
-          const isRemoteActive = !readOnly && activeRemoteWidgetId === widget.id;
+      {/* Empty State vs 12-Column Grid Canvas */}
+      {widgets.length === 0 ? (
+        <div className="p-8 sm:p-12 text-center bg-slate-900/70 border border-slate-800 rounded-2xl">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center mx-auto mb-4 text-emerald-400">
+            <LayoutGrid className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-bold text-white mb-2">
+            No Dashboard Blocks Displayed
+          </h3>
+          <p className="text-xs text-slate-400 max-w-md mx-auto mb-6">
+            The dashboard canvas currently has no widget blocks loaded. Restore the standard AVDP Master Dashboard to display the 10 official KPI cards, district choropleth map, rice productivity benchmarks, and value chain flow.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {onResetToDefault && (
+              <button
+                onClick={onResetToDefault}
+                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg transition-all"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Restore Official AVDP Dashboard (10 Widgets)</span>
+              </button>
+            )}
+            {onOpenImportCsv && (
+              <button
+                onClick={onOpenImportCsv}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs flex items-center gap-2 border border-slate-700 transition-all"
+              >
+                <Upload className="w-4 h-4 text-emerald-400" />
+                <span>Import CSV Dataset</span>
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-12 gap-4">
+          {widgets.map((widget, index) => {
+            const ds =
+              datasets.find((d) => d.id === widget.datasetId) ||
+              datasets.find((d) => d.id === 'ds_avdp_reconciled_q3_2025') ||
+              datasets[0];
+            const isRemoteActive = !readOnly && activeRemoteWidgetId === widget.id;
 
-          return (
-            <div
-              key={widget.id}
-              draggable={!readOnly}
-              onDragStart={(e) => !readOnly && handleDragStart(e, index)}
-              onDragOver={(e) => !readOnly && handleDragOver(e)}
-              onDrop={(e) => !readOnly && handleDrop(e, index)}
-              className={`${getColSpanClass(
-                widget.colSpan
-              )} relative group transition-all duration-200 ${
-                isRemoteActive ? 'ring-2 ring-sky-400 ring-offset-2 ring-offset-slate-950' : ''
-              }`}
-            >
-              {/* Remote collaborator indicator */}
-              {isRemoteActive && (
-                <div className="absolute -top-3 right-4 z-30 px-2 py-0.5 rounded-full bg-sky-500 text-slate-950 text-[10px] font-bold shadow-lg animate-pulse flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                  <span>Peer is viewing / editing this block</span>
-                </div>
-              )}
-
-              {!readOnly && (
-                <>
-              {/* Action Toolbar on Hover */}
-              <div className="absolute top-3 right-10 z-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-slate-900/90 border border-slate-700/80 rounded-lg p-1 shadow-lg">
-                <button
-                  onClick={() => handleMove(index, 'up')}
-                  disabled={index === 0}
-                  title="Move left/up"
-                  className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-800"
-                >
-                  <MoveUp className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handleMove(index, 'down')}
-                  disabled={index === widgets.length - 1}
-                  title="Move right/down"
-                  className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-800"
-                >
-                  <MoveDown className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingWidget(widget);
-                    setIsModalOpen(true);
-                  }}
-                  title="Configure axes & metrics"
-                  className="p-1 text-slate-400 hover:text-emerald-400 rounded hover:bg-slate-800"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handleDelete(widget.id)}
-                  title="Remove block"
-                  className="p-1 text-slate-400 hover:text-rose-400 rounded hover:bg-slate-800"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-                </>
-              )}
-
-              {/* Chart Renderer Container */}
-              <div className="h-full overflow-hidden rounded-xl">
-                <ChartErrorBoundary
-                  chartTitle={widget.title}
-                  resetKey={[
-                    widget.id,
-                    widget.datasetId || '',
-                    selectedDistrict || '',
-                    ds?.rowCount || 0,
-                    canvasState.version,
-                  ].join(':')}
-                >
-                  <ChartRenderer
-                    widget={widget}
-                    dataset={ds}
-                    selectedDistrict={selectedDistrict}
-                    onSelectDistrict={onSelectDistrict}
-                  />
-                </ChartErrorBoundary>
-                {ds && (
-                  <ChartProvenance
-                    dataset={ds}
-                    dataSourceMode={dataSourceMode}
-                  />
+            return (
+              <div
+                key={widget.id}
+                draggable={!readOnly}
+                onDragStart={(e) => !readOnly && handleDragStart(e, index)}
+                onDragOver={(e) => !readOnly && handleDragOver(e)}
+                onDrop={(e) => !readOnly && handleDrop(e, index)}
+                className={`${getColSpanClass(
+                  widget.colSpan
+                )} relative group transition-all duration-200 ${
+                  isRemoteActive ? 'ring-2 ring-sky-400 ring-offset-2 ring-offset-slate-950' : ''
+                }`}
+              >
+                {/* Remote collaborator indicator */}
+                {isRemoteActive && (
+                  <div className="absolute -top-3 right-4 z-30 px-2 py-0.5 rounded-full bg-sky-500 text-slate-950 text-[10px] font-bold shadow-lg animate-pulse flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                    <span>Peer is viewing / editing this block</span>
+                  </div>
                 )}
+
+                {!readOnly && (
+                  <>
+                {/* Action Toolbar on Hover */}
+                <div className="absolute top-3 right-10 z-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-slate-900/90 border border-slate-700/80 rounded-lg p-1 shadow-lg">
+                  <button
+                    onClick={() => handleMove(index, 'up')}
+                    disabled={index === 0}
+                    title="Move left/up"
+                    className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-800"
+                  >
+                    <MoveUp className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleMove(index, 'down')}
+                    disabled={index === widgets.length - 1}
+                    title="Move right/down"
+                    className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-800"
+                  >
+                    <MoveDown className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingWidget(widget);
+                      setIsModalOpen(true);
+                    }}
+                    title="Configure axes & metrics"
+                    className="p-1 text-slate-400 hover:text-emerald-400 rounded hover:bg-slate-800"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(widget.id)}
+                    title="Remove block"
+                    className="p-1 text-slate-400 hover:text-rose-400 rounded hover:bg-slate-800"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                  </>
+                )}
+
+                {/* Chart Renderer Container */}
+                <div className="h-full overflow-hidden rounded-xl">
+                  <ChartErrorBoundary
+                    chartTitle={widget.title}
+                    resetKey={[
+                      widget.id,
+                      widget.datasetId || '',
+                      selectedDistrict || '',
+                      ds?.rowCount || 0,
+                      canvasState.version,
+                    ].join(':')}
+                  >
+                    <ChartRenderer
+                      widget={widget}
+                      dataset={ds}
+                      selectedDistrict={selectedDistrict}
+                      onSelectDistrict={onSelectDistrict}
+                    />
+                  </ChartErrorBoundary>
+                  {ds && (
+                    <ChartProvenance
+                      dataset={ds}
+                      dataSourceMode={dataSourceMode}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {!readOnly && (
         <>

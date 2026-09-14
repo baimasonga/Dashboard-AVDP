@@ -10,6 +10,7 @@ import {
 } from './reportingPeriods';
 import { isDataset } from '../services/dashboardDataGateway';
 import { INDICATOR_CATALOG } from './indicatorCatalog';
+import { AVDP_RECONCILED_Q3_2025_DATASET } from './avdpOfficialDataset';
 
 const districts = ['Bo', 'Kenema', 'Kailahun'];
 
@@ -145,3 +146,11 @@ test('every indicator exposes the complete governance contract', () => {
     assert.ok(Array.isArray(indicator.disaggregation));
   }
 });
+
+test('official AVDP Q3 2025 dataset satisfies gateway contract with 16 districts', () => {
+  assert.equal(isDataset(AVDP_RECONCILED_Q3_2025_DATASET), true);
+  assert.equal(AVDP_RECONCILED_Q3_2025_DATASET.rowCount, 16);
+  assert.equal(AVDP_RECONCILED_Q3_2025_DATASET.verificationStatus, 'Verified');
+  assert.equal(AVDP_RECONCILED_Q3_2025_DATASET.reportingPeriod, '2025 Q3');
+});
+

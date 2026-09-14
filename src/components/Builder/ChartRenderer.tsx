@@ -25,6 +25,51 @@ import {
   Info,
 } from 'lucide-react';
 
+// Helper to resolve row field values across schema versions and synonyms
+const getRowFieldValue = (row: Record<string, any>, colName?: string): any => {
+  if (!colName || !row) return undefined;
+  if (row[colName] !== undefined && row[colName] !== null) return row[colName];
+
+  const lowerCol = colName.toLowerCase().replace(/[\s_-]+/g, '');
+  const keys = Object.keys(row);
+  for (const k of keys) {
+    if (k.toLowerCase().replace(/[\s_-]+/g, '') === lowerCol) {
+      if (row[k] !== undefined && row[k] !== null) return row[k];
+    }
+  }
+
+  // Synonyms and semantic aliases
+  const aliasMap: Record<string, string[]> = {
+    totalbeneficiaries: ['beneficiaryhouseholds', 'beneficiaries', 'smallholders', 'households', 'totalbeneficiaryhouseholds'],
+    beneficiaryhouseholds: ['totalbeneficiaries', 'beneficiaries', 'smallholders'],
+    riceyieldmtha: ['riceivsyieldmtha', 'riceyield', 'yieldmtha', 'riceyieldmt'],
+    riceivsyieldmtha: ['riceyieldmtha', 'riceyield', 'yieldmtha'],
+    cassavayieldmtha: ['cassavayield', 'cassavamt'],
+    oilpalmproductionmt: ['oilpalmyieldmt', 'oilpalmproduction', 'oilpalmmt', 'oilpalm'],
+    oilpalmyieldmt: ['oilpalmproductionmt', 'oilpalmproduction', 'oilpalmmt'],
+    ivshectaresdeveloped: ['ivsdevelopedha', 'ivshectares', 'ivsha', 'developedha'],
+    ivsdevelopedha: ['ivshectaresdeveloped', 'ivshectares', 'ivsha'],
+    agroprocessingfacilities: ['agroprocessingmills', 'processingmills', 'processingunits', 'agromills'],
+    agroprocessingmills: ['agroprocessingfacilities', 'processingmills', 'processingunits'],
+    ruralfinanceaccessslem: ['creditdisbursedmillionsle', 'ruralfinanceslem', 'creditdisbursed', 'financeslem'],
+    creditdisbursedmillionsle: ['ruralfinanceaccessslem', 'ruralfinanceslem', 'creditdisbursed'],
+    overalltargetprogresspct: ['mecompletionpct', 'completionpct', 'targetprogresspct', 'progresspct'],
+    mecompletionpct: ['overalltargetprogresspct', 'targetprogresspct', 'completionpct'],
+    primarycommodity: ['commodity', 'valuechain', 'primarycrop'],
+  };
+
+  const synonyms = aliasMap[lowerCol] || [];
+  for (const syn of synonyms) {
+    for (const k of keys) {
+      if (k.toLowerCase().replace(/[\s_-]+/g, '') === syn) {
+        if (row[k] !== undefined && row[k] !== null) return row[k];
+      }
+    }
+  }
+
+  return undefined;
+};
+
 interface ChartRendererProps {
   widget: WidgetConfig;
   dataset?: Dataset;
@@ -57,8 +102,10 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({
   if (filteredRows.length > 0 && widget.xAxis && widget.yAxis) {
     const groups = new Map<string, number[]>();
     filteredRows.forEach((r) => {
-      const key = String(r[widget.xAxis] || 'N/A');
-      const val = parseFloat(r[widget.yAxis]);
+      const keyVal = getRowFieldValue(r, widget.xAxis);
+      const key = keyVal !== undefined && keyVal !== null ? String(keyVal) : 'N/A';
+      const rawVal = getRowFieldValue(r, widget.yAxis);
+      const val = typeof rawVal === 'number' ? rawVal : parseFloat(String(rawVal || ''));
       const num = isNaN(val) ? 0 : val;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(num);

@@ -14,13 +14,14 @@ export interface DemonstrationDatasetMetadata {
   owner: 'M&E Unit' | 'Component lead';
 }
 
-const stableCode = (value: string) =>
-  Array.from(value).reduce((sum, character) => sum + character.charCodeAt(0), 0);
+const stableCode = (value?: string | null) =>
+  Array.from(String(value || '')).reduce((sum, character) => sum + character.charCodeAt(0), 0);
 
 export const getDemonstrationDatasetMetadata = (
-  dataset: Pick<Dataset, 'id'>
+  dataset?: Pick<Dataset, 'id'> | null
 ): DemonstrationDatasetMetadata => {
-  const code = stableCode(dataset.id);
+  const id = dataset?.id || 'default_dataset';
+  const code = stableCode(id);
   const quarterly = code % 2 === 0;
 
   return {
@@ -33,8 +34,10 @@ export const getDemonstrationDatasetMetadata = (
 };
 
 export const datasetMatchesReportingPeriod = (
-  dataset: Pick<Dataset, 'id'>,
+  dataset: Pick<Dataset, 'id'> | null | undefined,
   period: ReportingPeriod
-) =>
-  period === 'Latest available' ||
-  getDemonstrationDatasetMetadata(dataset).reportingPeriod === period;
+) => {
+  if (!dataset) return false;
+  if (period === 'Latest available') return true;
+  return getDemonstrationDatasetMetadata(dataset).reportingPeriod === period;
+};

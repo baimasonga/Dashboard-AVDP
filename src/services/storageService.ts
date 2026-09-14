@@ -45,12 +45,24 @@ class StorageService {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CANVAS_STATE);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (
+          parsed &&
+          typeof parsed === 'object' &&
+          Array.isArray(parsed.widgets) &&
+          parsed.widgets.length > 0
+        ) {
+          return parsed;
+        }
       }
     } catch (e) {
       console.warn('Error reading canvas from storage:', e);
     }
 
+    return this.resetCanvasToDefault();
+  }
+
+  public resetCanvasToDefault(): CanvasState {
     const defaultState: CanvasState = {
       id: 'canvas_sl_avdp_master',
       title: 'AVDP Sierra Leone Agricultural Value Chain Master Dashboard',
@@ -59,7 +71,7 @@ class StorageService {
       widgets: INITIAL_WIDGETS,
       theme: 'dark-emerald',
       lastModified: Date.now(),
-      updatedBy: 'Local User',
+      updatedBy: 'System Default',
       version: 1,
     };
     this.saveCanvasStateLocally(defaultState);
@@ -101,8 +113,31 @@ class StorageService {
       const saved = localStorage.getItem(STORAGE_KEYS.DATASETS);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+        if (Array.isArray(parsed)) {
+          const validSaved = parsed.filter(
+            (d: any) =>
+              d &&
+              typeof d === 'object' &&
+              typeof d.id === 'string' &&
+              Array.isArray(d.rows) &&
+              d.rows.length > 0
+          );
+
+          const existingIds = new Set(validSaved.map((d: Dataset) => d.id));
+          const missingDefaults = DEFAULT_DATASETS.filter((d) => !existingIds.has(d.id));
+
+          if (missingDefaults.length > 0 || validSaved.length !== parsed.length) {
+            const merged = [
+              ...DEFAULT_DATASETS.filter((d) => !existingIds.has(d.id)),
+              ...validSaved,
+            ];
+            this.saveDatasetsLocally(merged);
+            return merged;
+          }
+
+          if (validSaved.length > 0) {
+            return validSaved;
+          }
         }
       }
     } catch (e) {
@@ -111,6 +146,16 @@ class StorageService {
 
     this.saveDatasetsLocally(DEFAULT_DATASETS);
     return DEFAULT_DATASETS;
+  }
+
+  public clearAllCache(): void {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.CANVAS_STATE);
+      localStorage.removeItem(STORAGE_KEYS.DATASETS);
+      localStorage.removeItem(STORAGE_KEYS.SYNC_QUEUE);
+    } catch (e) {
+      console.warn('Error clearing storage:', e);
+    }
   }
 
   public saveDatasetsLocally(datasets: Dataset[]) {
